@@ -1,3 +1,4 @@
+{-# LANGUAGE DeriveDataTypeable #-}
 import System.IO
 import System.Locale
 import System.Environment
@@ -6,6 +7,7 @@ import Control.Monad
 import Data.List.Split
 import Data.Time
 import Data.Time.Format
+import Text.JSON.Generic
 
 {- Functions to treat the SGML OFX format -}
 
@@ -32,7 +34,7 @@ name_amount_date ("TRNAMT", amount) (names , amounts , dates) = (names , amount 
 name_amount_date ("DTPOSTED", date) (names , amounts , dates) = (names , amounts , date : dates)
 name_amount_date _ acc = acc
 
-data Transaction = Transaction { name :: String , amount :: Double , date :: UTCTime } deriving (Show)
+data Transaction = Transaction { name :: String , amount :: Double , trn_date :: UTCTime } deriving (Show)
 instance Eq Transaction where x == y = amount x == amount y
 instance Ord Transaction where compare x y = compare (amount x) (amount y)
 
@@ -44,7 +46,7 @@ extractTrnDetails input =
 			Just $ Transaction {
 				name = name ,
 				amount = - (read amount) ,
-				date = readTime defaultTimeLocale "%Y%m%d%H%M%S%Q" date
+				trn_date = readTime defaultTimeLocale "%Y%m%d%H%M%S%Q" date
 			}
 		_ -> Nothing
 
@@ -61,19 +63,38 @@ getDebits input = do
 				
 {- Functions to treat the JSON gps data -}
 
-data Position = Position { latitude :: Int , longitude :: Int , date :: UTCTime } deriving (Show)
--- do we need accuracy too?
+data Point = Point {
+	timestampMs :: String,
+	latitudeE7 :: Int,
+	longitudeE7 :: Int
+} deriving (Show, Data, Typeable)
+data Gps = Gps { locations :: [Point] } deriving (Show, Data, Typeable)
 
-getJsonBlock :: String -> [String]
-getJsonBlock = between_separators "{" "}"
+getPoints :: String -> [Point]
+getPoints input = locations (decodeJSON input :: Gps)
 
---getPositions :: String -> [Position]
---getPositions
+data Position = Position {
+	latitude :: Int,
+	longitude :: Int,
+	pos_date :: UTCTime
+} deriving (Show)
+
+getPositions :: String -> [Position]
+getPositions input = do
+	point <- getPoints input
+	return $ Position {
+		latitude = latitudeE7 point,
+		longitude = longitudeE7 point,
+		pos_date =
+			let tMs = timestampMs point in
+			let t = take (length tMs - 3) tMs in
+			readTime defaultTimeLocale "%s" t
+	}
 
 main = do
 	args <- getArgs
-	case args
-		[bank_file , gps_file] ->
+	case args of
+		[bank_file , gps_file] -> do
 			inp_bank <- openFile bank_file ReadMode
 			inp_gps <- openFile gps_file ReadMode
 			bank <- hGetContents inp_bank
@@ -81,8 +102,10 @@ main = do
 			let debits = getDebits bank
 			--let max_trn = foldr max (head debits) (tail debits)
 			--putStrLn . show $ max_trn
-			putStrLn . show . head $ getJsonBlock gps
-			hClose inp
-		_ ->
+			let positions = getPositions gps
+			putStrLn . show $ head positions
+			hClose inp_bank
+			hClose inp_gps
+		_ -> do
 			putStrLn "Incorrect number of arguments!"
 			exitWith (ExitFailure 1)
