@@ -4,6 +4,7 @@ import System.Locale
 import System.Environment
 import System.Exit
 import Control.Monad
+import Data.Function
 import Data.Maybe
 import Data.List
 import Data.List.Split
@@ -81,7 +82,13 @@ data Position = Position {
 	latitude :: Int,
 	longitude :: Int,
 	pos_date :: UTCTime
-} deriving (Show)
+} deriving (Show, Eq)
+instance Ord Position
+	where compare x y =
+		case compare (pos_date x) (pos_date y) of
+			EQ -> compare (latitude x , longitude x) (latitude y , longitude y)
+			r -> r
+-- positions are ordered first by date then by latitude and longitude
 
 getPositions :: String -> [Position]
 getPositions input = do
@@ -104,9 +111,9 @@ main = do
 			bank <- hGetContents inp_bank
 			gps <- hGetContents inp_gps
 			let debits = getDebits bank
-			-- putStrLn . show . take 3 . reverse $ sort debits
+			putStrLn . show . take 3 . reverse $ sortBy (compare `on` amount) debits
 			let positions = getPositions gps
-			putStrLn . show $ head positions
+			--putStrLn . show $ head positions
 			hClose inp_bank
 			hClose inp_gps
 		_ -> do
