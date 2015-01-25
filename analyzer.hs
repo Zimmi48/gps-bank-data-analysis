@@ -4,6 +4,7 @@ import System.Locale
 import System.Environment
 import System.Exit
 import Control.Monad
+import Data.Maybe
 import Data.List.Split
 import Data.Time
 import Data.Time.Format
@@ -51,15 +52,10 @@ extractTrnDetails input =
 		_ -> Nothing
 
 getDebits :: String -> [Transaction]
-getDebits input = do
-	transaction <- getTransactionsSGML input
-	case extractTrnDetails transaction of
-		Nothing -> []
-		Just details ->
-			if amount details > 0 then
-				return details
-			else
-				[]
+getDebits input =
+	filter (\trn -> amount trn > 0) $
+	getTransactionsSGML input >>=
+	maybeToList . extractTrnDetails
 				
 {- Functions to treat the JSON gps data -}
 
