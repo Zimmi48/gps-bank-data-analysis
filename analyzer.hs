@@ -14,6 +14,9 @@ import Text.JSON.Generic
 
 {- Defining an insertion sort because it is quicker on nearly sorted arrays -}
 
+insertion_sort :: Ord a => [a] -> [a]
+insertion_sort = foldr insert []
+
 {- Functions to treat the SGML OFX format -}
 
 -- (between_separators sep1 sep2 input) returns only the substrings which
@@ -64,6 +67,8 @@ extractTrnDetails input =
 
 getDebits :: String -> [Transaction]
 getDebits input =
+	-- we reverse before sorting because the list will be nearly sorted then
+	insertion_sort . reverse .
 	filter (\trn -> amount trn > 0) $
 	getTransactionsSGML input >>=
 	maybeToList . extractTrnDetails
@@ -93,7 +98,8 @@ instance Ord Position
 -- positions are ordered first by date then by latitude and longitude
 
 getPositions :: String -> [Position]
-getPositions input = do
+-- the input data is already sorted
+getPositions input = reverse $ do
 	point <- getPoints input
 	return $ Position {
 		latitude = latitudeE7 point,
@@ -110,19 +116,22 @@ main = do
 		[bank_file , gps_file] -> do
 			inp_bank <- openFile bank_file ReadMode
 			inp_gps <- openFile gps_file ReadMode
-			bank <- hGetContents inp_bank
+			bank <- hGetContents inp_bank >>= getDebits
 			gps <- hGetContents inp_gps
 			let debits = getDebits bank
+			let positions = getPositions gps
+			-- test if debits are sorted
+			--putStrLn . show . and . (\dates -> zipWith (<=) dates (drop 1 dates)) $ map trn_date debits
+			-- The answer was no but now transactions are sorted after extraction.
+			-- test if positions are sorted already
+			--putStrLn . show . and . (\dates -> zipWith (<=) dates (drop 1 dates)) $ map pos_date positions
+			-- The answer is yes.
+			
 			-- show the three biggest spending
 			--putStrLn . show . take 3 . reverse $ sortBy (compare `on` amount) debits
-			-- test if debits are sorted already
-			--putStrLn . show . and . (\dates -> zipWith (>=) dates (drop 1 dates)) $ map trn_date debits
-			-- The answer is no.
-			let positions = getPositions gps
+			
 			--putStrLn . show $ head positions
-			-- test if positions are sorted already
-			--putStrLn . show . and . (\dates -> zipWith (>=) dates (drop 1 dates)) $ map pos_date positions
-			-- The answer is yes.
+			
 			hClose inp_bank
 			hClose inp_gps
 		_ -> do
