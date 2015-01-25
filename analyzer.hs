@@ -19,29 +19,6 @@ insertion_sort = foldr insert []
 
 {- Functions to treat the (SGML) OFX format -}
 
--- (between_separators sep1 sep2 input) returns only the substrings which
--- appear between separators sep1 and sep2
-between_separators :: String -> String -> String -> [String]
-between_separators sep1 sep2 = map (head . splitOn sep2) . tail . splitOn sep1
--- splitOn always returns a non-empty list so there is no problem with this definition
-
-getTransactionsSGML :: String -> [String]
-getTransactionsSGML = between_separators "<STMTTRN>" "</STMTTRN>"
-
-even_list_to_couples :: [a] -> [(a,a)]
-even_list_to_couples [] = []
-even_list_to_couples (h :[]) = []
-even_list_to_couples (h1 : h2 : tl) = (h1,h2) : (even_list_to_couples tl)
-
--- returns a list of couples of a node and its text content
-to_nodes_and_texts :: String -> [(String , String)]
-to_nodes_and_texts = even_list_to_couples . tail . splitOneOf "<>"
-
-name_amount_date ("NAME", name) (names , amounts , dates) = (name : names , amounts , dates)
-name_amount_date ("TRNAMT", amount) (names , amounts , dates) = (names , amount : amounts , dates)
-name_amount_date ("DTPOSTED", date) (names , amounts , dates) = (names , amounts , date : dates)
-name_amount_date _ acc = acc
-
 data Transaction = Transaction { name :: String , amount :: Double , trn_date :: UTCTime } deriving (Show, Eq)
 instance Ord Transaction
 	where compare x y =
@@ -52,6 +29,17 @@ instance Ord Transaction
 					r -> r
 			r -> r
 -- transactions are ordered first by date then by amount and finally by name
+
+getDebits :: String -> [Transaction]
+getDebits input =
+	-- we reverse before sorting because the list will be nearly sorted then
+	insertion_sort . reverse .
+	filter (\trn -> amount trn > 0) $
+	getTransactionsSGML input >>=
+	maybeToList . extractTrnDetails
+
+getTransactionsSGML :: String -> [String]
+getTransactionsSGML = between_separators "<STMTTRN>" "</STMTTRN>"
 
 extractTrnDetails :: String -> Maybe Transaction
 extractTrnDetails input =
@@ -65,13 +53,25 @@ extractTrnDetails input =
 			}
 		_ -> Nothing
 
-getDebits :: String -> [Transaction]
-getDebits input =
-	-- we reverse before sorting because the list will be nearly sorted then
-	insertion_sort . reverse .
-	filter (\trn -> amount trn > 0) $
-	getTransactionsSGML input >>=
-	maybeToList . extractTrnDetails
+-- (between_separators sep1 sep2 input) returns only the substrings which
+-- appear between separators sep1 and sep2
+between_separators :: String -> String -> String -> [String]
+between_separators sep1 sep2 = map (head . splitOn sep2) . tail . splitOn sep1
+-- splitOn always returns a non-empty list so there is no problem with this definition
+
+-- returns a list of couples of a node and its text content
+to_nodes_and_texts :: String -> [(String , String)]
+to_nodes_and_texts = even_list_to_couples . tail . splitOneOf "<>"
+
+name_amount_date ("NAME", name) (names , amounts , dates) = (name : names , amounts , dates)
+name_amount_date ("TRNAMT", amount) (names , amounts , dates) = (names , amount : amounts , dates)
+name_amount_date ("DTPOSTED", date) (names , amounts , dates) = (names , amounts , date : dates)
+name_amount_date _ acc = acc
+
+even_list_to_couples :: [a] -> [(a,a)]
+even_list_to_couples [] = []
+even_list_to_couples (h :[]) = []
+even_list_to_couples (h1 : h2 : tl) = (h1,h2) : (even_list_to_couples tl)
 				
 {- Functions to treat the JSON GPS data -}
 
@@ -126,7 +126,9 @@ getPositions input = reverse $ do
    * which the people come to and depart from at a faster speed so that the
      region of the event is clearly identified
  -}
-getGpsEvents :: [Position] -> [[Position]]
+--getGpsEvents :: [Position] -> [[Position]]
+
+
 
 main = do
 	args <- getArgs
