@@ -12,6 +12,8 @@ import Data.Time
 import Data.Time.Format
 import Text.JSON.Generic
 
+{- Defining an insertion sort because it is quicker on nearly sorted arrays -}
+
 {- Functions to treat the SGML OFX format -}
 
 -- (between_separators sep1 sep2 input) returns only the substrings which
@@ -111,9 +113,16 @@ main = do
 			bank <- hGetContents inp_bank
 			gps <- hGetContents inp_gps
 			let debits = getDebits bank
-			putStrLn . show . take 3 . reverse $ sortBy (compare `on` amount) debits
+			-- show the three biggest spending
+			--putStrLn . show . take 3 . reverse $ sortBy (compare `on` amount) debits
+			-- test if debits are sorted already
+			--putStrLn . show . and . (\dates -> zipWith (>=) dates (drop 1 dates)) $ map trn_date debits
+			-- The answer is no.
 			let positions = getPositions gps
 			--putStrLn . show $ head positions
+			-- test if positions are sorted already
+			--putStrLn . show . and . (\dates -> zipWith (>=) dates (drop 1 dates)) $ map pos_date positions
+			-- The answer is yes.
 			hClose inp_bank
 			hClose inp_gps
 		_ -> do
