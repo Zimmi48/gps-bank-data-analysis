@@ -5,6 +5,7 @@ import System.Environment
 import System.Exit
 import Control.Monad
 import Data.Maybe
+import Data.List
 import Data.List.Split
 import Data.Time
 import Data.Time.Format
@@ -35,9 +36,16 @@ name_amount_date ("TRNAMT", amount) (names , amounts , dates) = (names , amount 
 name_amount_date ("DTPOSTED", date) (names , amounts , dates) = (names , amounts , date : dates)
 name_amount_date _ acc = acc
 
-data Transaction = Transaction { name :: String , amount :: Double , trn_date :: UTCTime } deriving (Show)
-instance Eq Transaction where x == y = amount x == amount y
-instance Ord Transaction where compare x y = compare (amount x) (amount y)
+data Transaction = Transaction { name :: String , amount :: Double , trn_date :: UTCTime } deriving (Show, Eq)
+instance Ord Transaction
+	where compare x y =
+		case compare (amount x) (amount y) of
+			EQ ->
+				case compare (trn_date x) (trn_date y) of
+					EQ -> compare (name x) (name y)
+					r -> r
+			r -> r
+-- transactions are ordered first by amount then by date and finally by name
 
 extractTrnDetails :: String -> Maybe Transaction
 extractTrnDetails input =
@@ -96,8 +104,7 @@ main = do
 			bank <- hGetContents inp_bank
 			gps <- hGetContents inp_gps
 			let debits = getDebits bank
-			--let max_trn = foldr max (head debits) (tail debits)
-			--putStrLn . show $ max_trn
+			-- putStrLn . show . take 3 . reverse $ sort debits
 			let positions = getPositions gps
 			putStrLn . show $ head positions
 			hClose inp_bank
