@@ -17,7 +17,7 @@ import Text.JSON.Generic
 insertion_sort :: Ord a => [a] -> [a]
 insertion_sort = foldr insert []
 
-{- Functions to treat the SGML OFX format -}
+{- Functions to treat the (SGML) OFX format -}
 
 -- (between_separators sep1 sep2 input) returns only the substrings which
 -- appear between separators sep1 and sep2
@@ -73,7 +73,7 @@ getDebits input =
 	getTransactionsSGML input >>=
 	maybeToList . extractTrnDetails
 				
-{- Functions to treat the JSON gps data -}
+{- Functions to treat the JSON GPS data -}
 
 data Point = Point {
 	timestampMs :: String,
@@ -109,6 +109,24 @@ getPositions input = reverse $ do
 			let t = take (length tMs - 3) tMs in
 			readTime defaultTimeLocale "%s" t
 	}
+
+{- GPS data mining -}
+
+{- getGpsEvents will extract disjoint sublists of consecutive positions
+   called "events" and verifying:
+   * the duration of the event is larger than 5 minutes
+   * the maximum speed during the event is less than
+     + 5 kph
+     + half of the average speed the 5 minutes before and the 5 minutes
+       after the event
+   * the overall diameter of the event region is less than 5 kilometers
+   
+   I.e. we have very broad requirements which are devised to identify events:
+   * during which the people are walking or staying still
+   * which the people come to and depart from at a faster speed so that the
+     region of the event is clearly identified
+ -}
+getGpsEvents :: [Position] -> [[Position]]
 
 main = do
 	args <- getArgs
