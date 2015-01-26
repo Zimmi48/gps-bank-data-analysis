@@ -4,6 +4,7 @@ import System.Exit
 --import Data.Function
 --import Data.List
 import OfxReader
+import GpsData
 import GpsDataReader
 
 main = do
