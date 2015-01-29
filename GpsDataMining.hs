@@ -1,6 +1,6 @@
 module GpsDataMining (getGpsEvents) where
 
-import GpsData
+import Geo.Computations
 
 {- GPS data mining -}
 

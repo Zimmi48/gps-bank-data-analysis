@@ -3,8 +3,8 @@ import System.Environment
 import System.Exit
 --import Data.Function
 --import Data.List
+--import Geo.Computations
 import OfxReader
-import GpsData
 import GpsDataReader
 
 main = do
