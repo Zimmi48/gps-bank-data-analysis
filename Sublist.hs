@@ -4,6 +4,7 @@ module Sublist (
 		sTail,
 		sLast,
 		sLength,
+		sEmpty,
 		show,
 		fromList,
 		toList,
@@ -22,6 +23,12 @@ instance Show t => Show (Sublist t)
 		([] , _) -> "[]"
 		(_ ,  0) -> "[]"
 		(hd : tl , n) -> "[" ++ show hd ++ showRemaining tl (n - 1)
+instance Eq t => Eq (Sublist t) where
+	l1 == l2 =
+		if sEmpty l1 then
+			sEmpty l2
+		else
+			sHead l1 == sHead l2 && sTail l1 == sTail l2
 
 showRemaining [] _ = "]"
 showRemaining _  0 = "]"
@@ -61,6 +68,8 @@ sLast l =
 	([] , _) -> Nothing
 	(_ ,  0) -> Nothing
 	(hd : tl , n) -> Just $ maybe hd id $ sLast $  Sublist tl $ n - 1
+
+sEmpty l = sLength l == 0 || sList l == []
 
 toList :: Sublist t -> [t]
 toList l = take (sLength l) (sList l)
