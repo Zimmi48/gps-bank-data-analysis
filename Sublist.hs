@@ -1,19 +1,18 @@
 module Sublist (
+		Sublist, -- this is the type, not the data constructor
 		sCons,
 		sHead,
 		sTail,
 		sLast,
 		sLength,
 		sEmpty,
-		show,
 		fromList,
 		toList,
-		sublist,
+		sSublist,
 		sInits,
 		sInitsRev,
 		sTails
 	) where
--- encapsulation not working
 -- sLength is always correct by construction
 -- (cannot be larger than length . sList)
 import Data.List
@@ -46,20 +45,20 @@ sCons hd tl = Sublist (hd : sList tl) (sLength tl + 1)
 fromList :: [t] -> Sublist t
 fromList l = Sublist l $ length l
 
-{- Usecase: sublist l a b, where a <= b < length l,
-   will return the sublist l[a..b]
+{- Usecase: sSublist l a b, where a <= b < length l,
+   will return the sSublist l[a..b]
    Notes:
    * the indices start at 0
    * this function operates in linear time of a
 -}
-sublist :: Sublist t -> Int -> Int -> Sublist t
-sublist l a b =
+sSublist :: Sublist t -> Int -> Int -> Sublist t
+sSublist l a b =
 	if sEmpty l then
 		Sublist [] 0
 	else if a == 0 then
 		Sublist (sList l) $ min (b + 1) (sLength l)
 	else
-		sublist (sTail l) (a - 1) (b - 1)
+		sSublist (sTail l) (a - 1) (b - 1)
 
 -- HOW TO DESTRUCT SUBLISTS
 
