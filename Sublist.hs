@@ -17,6 +17,7 @@ module Sublist (
 -- (cannot be larger than length . sList)
 import Data.List
 
+-- should the length rather be a type parameter?
 data Sublist t = Sublist { sList :: [t] , sLength :: Int }
 
 instance Show t => Show (Sublist t)

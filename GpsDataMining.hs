@@ -3,6 +3,7 @@ module GpsDataMining (getGpsEvents) where
 import Data.List
 import Data.Time.Clock
 import Geo.Computations
+import Sublist
 
 {- GPS data mining -}
 
@@ -21,9 +22,9 @@ import Geo.Computations
      region of the event is clearly identified
  -}
 -- let's start by just using condition 1 and 3
-getGpsEvents :: [Point] -> [[Point]]
+getGpsEvents :: [Point] -> [Sublist Point]
 getGpsEvents track =
-	let candidates = map inits $ tails track in
+	let candidates = map sInits $ sTails $ fromList track in
 	-- returns all candidate events grouped by initial point
 	let candidates = map (dropWhile eventTooShort) candidates in
 	-- first condition satisfied
@@ -31,10 +32,11 @@ getGpsEvents track =
 	-- third condition satisfied
 	map last candidates
 
-smallSpread :: [Point] -> Bool
-smallSpread e = (< 1000) . distance (head e) (last e)
+-- this is not optimal as the last element is recomputed each time
+eventTooShort e = (< diff5Minutes) $ diffUTCTime (pntTime $ sHead e) (pntTime $ sLast e)
 
-eventTooShort :: [Point] -> Bool
-eventTooShort e = (< diff5Minutes) $ diffUTCTime (pntTime $ head e) (pntTime $ last e)
+-- incorrect definition
+smallSpread e = (< 1000) . distance (sHead e) (sLast e)
+-- a correct definition would first compute a center point and the check the distance to this point
 
 diff5Minutes = secondsToDiffTime $ 5 * 60
