@@ -2,6 +2,7 @@ module Sublist (
 		sCons,
 		sHead,
 		sTail,
+		sLast,
 		sLength,
 		show,
 		fromList,
@@ -54,6 +55,13 @@ sHead = head . sList
 sTail :: Sublist t -> Sublist t
 sTail l = Sublist (tail $ sList l) (sLength l - 1)
 
+sLast :: Sublist t -> Maybe t
+sLast l =
+	case (sList l , sLength l) of
+	([] , _) -> Nothing
+	(_ ,  0) -> Nothing
+	(hd : tl , n) -> Just $ maybe hd id $ sLast $  Sublist tl $ n - 1
+
 toList :: Sublist t -> [t]
 toList l = take (sLength l) (sList l)
 
@@ -64,12 +72,14 @@ sTails :: Sublist t -> [Sublist t]
 sTails l = zipWith Sublist (tails $ sList l) $ allSublistLengthsRev l
 
 -- returns all the prefixes of the argument (longest to shortest)
+-- can generate the same answer multiple times if sLength is not the real length
 sInitsRev :: Sublist t -> [Sublist t]
 sInitsRev l = map (Sublist $ sList l) $ allSublistLengthsRev l
 
 allSublistLengthsRev l = [sLength l, sLength l - 1 .. 0]
 
 -- returns all the prefixes of the argument (shortest to longest)
+-- can generate the same answer multiple times if sLength is not the real length
 sInits :: Sublist t -> [Sublist t]
 sInits l = flip map [0 .. sLength l] $ Sublist $ sList l
 
