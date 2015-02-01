@@ -1,10 +1,15 @@
 import System.IO
 import System.Environment
 import System.Exit
+import System.Locale
+import Data.Time
 --import Data.Function
 --import Data.List
---import Geo.Computations
+import Geo.Computations
 import InputReader
+
+beginDate = readTime defaultTimeLocale "%Y-%m-%d" "2014-02-01"
+endDate   = readTime defaultTimeLocale "%Y-%m-%d" "2014-03-01"
 
 main = do
 	args <- getArgs
@@ -14,8 +19,11 @@ main = do
 			inp_gps <- openFile gps_file ReadMode
 			bank <- hGetContents inp_bank
 			gps <- hGetContents inp_gps
-			let debits = getDebits bank
-			let positions = getPositions gps
+			let debits = getDebits bank (Just $ \trn -> trn_date trn >= beginDate && trn_date trn <= endDate)
+			let positions = getPositions gps (Just $ \pnt ->
+				case pntTime pnt of
+				Just date -> date >= beginDate && date <= endDate
+				Nothing -> False)
 			print $ take 3 positions
 			-- test if debits are sorted
 			--putStrLn . show . and . (\dates -> zipWith (<=) dates (drop 1 dates)) $ map trn_date debits

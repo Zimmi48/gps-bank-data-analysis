@@ -25,11 +25,16 @@ instance Ord Transaction
 			r -> r
 -- transactions are ordered first by date then by amount and finally by name
 
-getDebits :: String -> [Transaction]
-getDebits input =
+-- the second argument may be a filter
+getDebits :: String -> Maybe (Transaction -> Bool) -> [Transaction]
+getDebits input maybeSpecialFilter =
+	let theFilter =
+		case maybeSpecialFilter of
+		Nothing -> (\trn -> amount trn > 0)
+		Just specialFilter -> (\trn -> amount trn > 0 && specialFilter trn) in
 	-- we reverse before sorting because the list will be nearly sorted then
 	insertion_sort . reverse .
-	filter (\trn -> amount trn > 0) $
+	filter theFilter $
 	getTransactionsInner input >>=
 	maybeToList . extractTrnDetails
 
@@ -66,14 +71,18 @@ name_amount_date (_ : tl) = name_amount_date tl
 
 {- Functions to treat the KML format -}
 
-getPositions :: String -> [Point]
-getPositions input =
+getPositions :: String -> Maybe (Point -> Bool) -> [Point]
+getPositions input maybeSpecialFilter =
 	let contents = to_nodes_and_texts input in
 	let (dates , coords) = dates_coords contents in
-	zipWith (\date coord ->
-		let latitude : longitude : _ = splitOn " " coord in
-		pt (read latitude) (read longitude) Nothing (Just $ readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
-	) dates coords
+	let track =
+		zipWith (\date coord ->
+			let latitude : longitude : _ = splitOn " " coord in
+			pt (read latitude) (read longitude) Nothing (Just $ readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
+		) dates coords in
+	reverse $ case maybeSpecialFilter of
+	Nothing -> track
+	Just specialFilter -> filter specialFilter track
 
 dates_coords [] = ([], [])
 dates_coords ("when"     : date  : tl) = let (dates , coords) = dates_coords tl in (date : dates , coords)
