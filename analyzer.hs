@@ -17,6 +17,7 @@ main = do
 			gps <- hGetContents inp_gps
 			let debits = getDebits bank
 			let positions = getPositions gps
+			print $ take 3 debits
 			-- test if debits are sorted
 			--putStrLn . show . and . (\dates -> zipWith (<=) dates (drop 1 dates)) $ map trn_date debits
 			-- The answer was no but now transactions are sorted after extraction.
