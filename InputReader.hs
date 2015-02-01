@@ -39,7 +39,7 @@ getTransactionsInner = between_separators "<STMTTRN>" "</STMTTRN>"
 extractTrnDetails :: String -> Maybe Transaction
 extractTrnDetails input =
 	let contents = to_nodes_and_texts input in
-	case name_amount_date contents (Nothing, Nothing, Nothing) of
+	case name_amount_date contents of
 		(Just name , Just amount , Just date) ->
 			Just $ Transaction {
 				name = name ,
@@ -58,24 +58,24 @@ between_separators sep1 sep2 = map (head . splitOn sep2) . tail . splitOn sep1
 to_nodes_and_texts :: String -> [String]
 to_nodes_and_texts = splitOneOf "<>"
 
-name_amount_date [] acc = acc
-name_amount_date ("NAME"   : name   : tl) (Nothing , amount , date) = name_amount_date tl (Just name , amount , date)
-name_amount_date ("TRNAMT" : amount : tl) (name , Nothing, date) = name_amount_date tl (name , Just amount , date)
-name_amount_date ("DTPOSTED" : date : tl) (name , amount , Nothing) = name_amount_date tl (name , amount , Just date)
-name_amount_date (_ : tl) acc = name_amount_date tl acc
+name_amount_date [] = (Nothing , Nothing , Nothing)
+name_amount_date ("NAME"   : name   : tl) = let (Nothing , amount , date) = name_amount_date tl in (Just name , amount , date)
+name_amount_date ("TRNAMT" : amount : tl) = let (name , Nothing, date) = name_amount_date tl in (name , Just amount , date)
+name_amount_date ("DTPOSTED" : date : tl) = let (name , amount , Nothing) = name_amount_date tl in (name , amount , Just date)
+name_amount_date (_ : tl) = name_amount_date tl
 
 {- Functions to treat the KML format -}
 
 getPositions :: String -> [Point]
 getPositions input =
 	let contents = to_nodes_and_texts input in
-	let (dates , coords) = dates_coords contents ([], []) in
+	let (dates , coords) = dates_coords contents in
 	zipWith (\date coord ->
 		let latitude : longitude : _ = splitOn " " coord in
 		pt (read latitude) (read longitude) Nothing (Just $ readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
 	) dates coords
 
-dates_coords [] acc = acc
-dates_coords ("when"     : date  : tl) (dates , coords) = dates_coords tl (date : dates , coords)
-dates_coords ("gx:coord" : coord : tl) (dates , coords) = dates_coords tl (dates , coord : coords)
-dates_coords (_ : tl) acc = dates_coords tl acc
+dates_coords [] = ([], [])
+dates_coords ("when"     : date  : tl) = let (dates , coords) = dates_coords tl in (date : dates , coords)
+dates_coords ("gx:coord" : coord : tl) = let (dates , coords) = dates_coords tl in (dates , coord : coords)
+dates_coords (_ : tl) = dates_coords tl
