@@ -8,6 +8,7 @@ import Text.JSON.Generic
 import Geo.Computations
 				
 {- Functions to treat the JSON GPS data -}
+-- This file is not used anymore because we rather use the simpler KML open format
 
 getPositions :: String -> [Point]
 -- the input data is already sorted

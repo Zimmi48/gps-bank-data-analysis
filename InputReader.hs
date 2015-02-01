@@ -1,10 +1,11 @@
-module OfxReader (Transaction , name , amount , trn_date , getDebits) where
+module InputReader (Transaction , name , amount , trn_date , getDebits, getPositions) where
 
 import System.Locale
 import Data.Maybe
 import Data.List
 import Data.List.Split
 import Data.Time
+import Geo.Computations
 
 {- Defining an insertion sort because it is quicker on nearly sorted arrays -}
 
@@ -29,17 +30,17 @@ getDebits input =
 	-- we reverse before sorting because the list will be nearly sorted then
 	insertion_sort . reverse .
 	filter (\trn -> amount trn > 0) $
-	getTransactionsSGML input >>=
+	getTransactionsInner input >>=
 	maybeToList . extractTrnDetails
 
-getTransactionsSGML :: String -> [String]
-getTransactionsSGML = between_separators "<STMTTRN>" "</STMTTRN>"
+getTransactionsInner :: String -> [String]
+getTransactionsInner = between_separators "<STMTTRN>" "</STMTTRN>"
 
 extractTrnDetails :: String -> Maybe Transaction
 extractTrnDetails input =
 	let contents = to_nodes_and_texts input in
-	case names_amounts_dates contents ([], [], []) of
-		(name : _ , amount : _ , date : _) ->
+	case name_amount_date contents (Nothing, Nothing, Nothing) of
+		(Just name , Just amount , Just date) ->
 			Just $ Transaction {
 				name = name ,
 				amount = - (read amount) ,
@@ -57,8 +58,24 @@ between_separators sep1 sep2 = map (head . splitOn sep2) . tail . splitOn sep1
 to_nodes_and_texts :: String -> [String]
 to_nodes_and_texts = splitOneOf "<>"
 
-names_amounts_dates [] acc = acc
-names_amounts_dates ("NAME"   : name   : tl) (names , amounts , dates) = names_amounts_dates tl (name : names , amounts , dates)
-names_amounts_dates ("TRNAMT" : amount : tl) (names , amounts , dates) = names_amounts_dates tl (names , amount : amounts , dates)
-names_amounts_dates ("DTPOSTED" : date : tl) (names , amounts , dates) = names_amounts_dates tl (names , amounts , date : dates)
-names_amounts_dates (_ : tl) acc = names_amounts_dates tl acc
+name_amount_date [] acc = acc
+name_amount_date ("NAME"   : name   : tl) (Nothing , amount , date) = name_amount_date tl (Just name , amount , date)
+name_amount_date ("TRNAMT" : amount : tl) (name , Nothing, date) = name_amount_date tl (name , Just amount , date)
+name_amount_date ("DTPOSTED" : date : tl) (name , amount , Nothing) = name_amount_date tl (name , amount , Just date)
+name_amount_date (_ : tl) acc = name_amount_date tl acc
+
+{- Functions to treat the KML format -}
+
+getPositions :: String -> [Point]
+getPositions input =
+	let contents = to_nodes_and_texts input in
+	let (dates , coords) = dates_coords contents ([], []) in
+	zipWith (\date coord ->
+		let latitude : longitude : _ = splitOn " " coord in
+		pt (read latitude) (read longitude) Nothing (Just $ readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
+	) dates coords
+
+dates_coords [] acc = acc
+dates_coords ("when"     : date  : tl) (dates , coords) = dates_coords tl (date : dates , coords)
+dates_coords ("gx:coord" : coord : tl) (dates , coords) = dates_coords tl (dates , coord : coords)
+dates_coords (_ : tl) acc = dates_coords tl acc
