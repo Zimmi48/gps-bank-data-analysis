@@ -5,6 +5,7 @@ import System.Locale
 import Data.Time
 --import Data.Function
 import Data.List
+import Data.Maybe
 import Geo.Computations
 import InputReader
 
@@ -17,17 +18,18 @@ main = do
 			let beginDate = readTime defaultTimeLocale "%Y-%m-%d" begin
 			let endDate   = readTime defaultTimeLocale "%Y-%m-%d" end
 			bank <- hGetContents inp_bank
-			gps <- hGetContents inp_gps
-			let debits = getDebits bank (Just $ \trn -> trn_date trn >= beginDate && trn_date trn <= endDate)
-			let positions = getPositions gps (Just $ \pnt ->
-				case pntTime pnt of
-				Just date -> date >= beginDate && date <= endDate
-				Nothing -> False)
+			gps  <- hGetContents inp_gps
+			let debits = getDebits bank $ Just (beginDate , endDate)
+			let positions = getPositions gps $ Just (beginDate , endDate)
 			putStrLn $ "Between " ++ begin ++ " and " ++ end ++ ", you recorded:"
 			putStrLn $ show (length positions) ++ " positions,"
 			putStr $ show (length debits) ++ " transactions at "
 			putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."
 			--print $ nub $ map name debits
+			
+			-- time between two positions
+			--let pntTimes = catMaybes $ map pntTime positions
+			--print $ length $ filter (< 90) $ zipWith diffUTCTime (drop 1 pntTimes) pntTimes
 			
 			-- test if debits are sorted
 			--putStrLn . show . and . (\dates -> zipWith (<=) dates (drop 1 dates)) $ map trn_date debits

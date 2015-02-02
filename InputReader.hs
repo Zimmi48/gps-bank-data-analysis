@@ -25,13 +25,13 @@ instance Ord Transaction
 			r -> r
 -- transactions are ordered first by date then by amount and finally by name
 
--- the second argument may be a filter
-getDebits :: String -> Maybe (Transaction -> Bool) -> [Transaction]
-getDebits input maybeSpecialFilter =
+-- the second argument may be a couple of begin / end date
+getDebits :: String -> Maybe (UTCTime , UTCTime) -> [Transaction]
+getDebits input maybeBeginEnd =
 	let theFilter =
-		case maybeSpecialFilter of
+		case maybeBeginEnd of
 		Nothing -> (\trn -> amount trn > 0)
-		Just specialFilter -> (\trn -> amount trn > 0 && specialFilter trn) in
+		Just (begin , end) -> (\trn -> amount trn > 0 && trn_date trn >= begin && trn_date trn <= end) in
 	-- we reverse before sorting because the list will be nearly sorted then
 	insertion_sort . reverse .
 	filter theFilter $
@@ -71,8 +71,9 @@ name_amount_date (_ : tl) = name_amount_date tl
 
 {- Functions to treat the KML format -}
 
-getPositions :: String -> Maybe (Point -> Bool) -> [Point]
-getPositions input maybeSpecialFilter =
+-- the second argument may be a couple of begin / end date
+getPositions :: String -> Maybe (UTCTime , UTCTime) -> [Point]
+getPositions input maybeBeginEnd =
 	let contents = to_nodes_and_texts input in
 	let (dates , coords) = dates_coords contents in
 	let track =
@@ -80,9 +81,17 @@ getPositions input maybeSpecialFilter =
 			let latitude : longitude : _ = splitOn " " coord in
 			pt (read latitude) (read longitude) Nothing (Just $ readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
 		) dates coords in
-	reverse $ case maybeSpecialFilter of
+	reverse $ case maybeBeginEnd of
 	Nothing -> track
-	Just specialFilter -> filter specialFilter track
+	Just (begin , end) ->
+		takeWhile(\pnt ->
+			case pntTime pnt of
+			Just date -> date >= begin
+			Nothing -> False) $
+		dropWhile (\pnt ->
+			case pntTime pnt of
+			Just date -> date > end
+			Nothing -> True) track
 
 dates_coords [] = ([], [])
 dates_coords ("when"     : date  : tl) = let (dates , coords) = dates_coords tl in (date : dates , coords)
