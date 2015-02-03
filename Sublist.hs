@@ -11,7 +11,11 @@ module Sublist (
 		sSublist,
 		sInits,
 		sInitsRev,
-		sTails
+		sTails,
+		sTakeUntil,
+		sFoldr,
+		sSum,
+		sProduct
 	) where
 -- sLength is always correct by construction
 -- (cannot be larger than length . sList)
@@ -98,3 +102,18 @@ allSublistLengthsRev l = [sLength l, sLength l - 1 .. 0]
 sInits :: Sublist t -> [Sublist t]
 sInits l = flip map [0 .. sLength l] $ Sublist $ sList l
 
+-- returns the shortest prefix such that its last element verifies the condition
+sTakeUntil :: (t -> Bool) -> Sublist t -> Sublist t
+sTakeUntil condition l =
+	let sL = sList l in
+	case findIndex condition sL of
+	Just i -> Sublist sL (i + 1)
+	Nothing -> l
+
+sFoldr :: (t -> s -> s) -> s -> Sublist t -> s
+sFoldr f init l =
+	if sEmpty l then init else
+		sHead l `f` sFoldr f init (sTail l)
+
+sSum = sFoldr (+) 0
+sProduct = sFoldr (*) 1
