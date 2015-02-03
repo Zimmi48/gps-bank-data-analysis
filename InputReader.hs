@@ -1,11 +1,12 @@
-module InputReader (Transaction , name , amount , trn_date , getDebits, getPositions) where
+module InputReader (getDebits , getPositions) where
 
 import System.Locale
 import Data.Maybe
 import Data.List
 import Data.List.Split
 import Data.Time
-import Geo.Computations
+import BankData
+import GpsData
 
 {- Defining an insertion sort because it is quicker on nearly sorted arrays -}
 
@@ -13,17 +14,6 @@ insertion_sort :: Ord a => [a] -> [a]
 insertion_sort = foldr insert []
 
 {- Functions to treat the OFX format -}
-
-data Transaction = Transaction { name :: String , amount :: Double , trn_date :: UTCTime } deriving (Show, Eq)
-instance Ord Transaction
-	where compare x y =
-		case compare (trn_date x) (trn_date y) of
-			EQ ->
-				case compare (amount x) (amount y) of
-					EQ -> compare (name x) (name y)
-					r -> r
-			r -> r
--- transactions are ordered first by date then by amount and finally by name
 
 -- the second argument may be a couple of begin / end date
 getDebits :: String -> Maybe (UTCTime , UTCTime) -> [Transaction]
@@ -72,26 +62,20 @@ name_amount_date (_ : tl) = name_amount_date tl
 {- Functions to treat the KML format -}
 
 -- the second argument may be a couple of begin / end date
-getPositions :: String -> Maybe (UTCTime , UTCTime) -> [Point]
+getPositions :: String -> Maybe (UTCTime , UTCTime) -> [Position]
 getPositions input maybeBeginEnd =
 	let contents = to_nodes_and_texts input in
 	let (dates , coords) = dates_coords contents in
 	let track =
 		zipWith (\date coord ->
 			let latitude : longitude : _ = splitOn " " coord in
-			pt (read latitude) (read longitude) Nothing (Just $ readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
+			Position (read latitude) (read longitude) (readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
 		) dates coords in
 	reverse $ case maybeBeginEnd of
 	Nothing -> track
 	Just (begin , end) ->
-		takeWhile(\pnt ->
-			case pntTime pnt of
-			Just date -> date >= begin
-			Nothing -> False) $
-		dropWhile (\pnt ->
-			case pntTime pnt of
-			Just date -> date > end
-			Nothing -> True) track
+		takeWhile((>= begin) . pos_date) $
+		dropWhile ((> end) . pos_date) track
 
 dates_coords [] = ([], [])
 dates_coords ("when"     : date  : tl) = let (dates , coords) = dates_coords tl in (date : dates , coords)

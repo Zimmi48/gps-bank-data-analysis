@@ -6,7 +6,8 @@ import Data.Time
 --import Data.Function
 import Data.List
 import Data.Maybe
-import Geo.Computations
+import BankData
+import GpsData
 import InputReader
 
 main = do

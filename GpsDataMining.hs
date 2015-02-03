@@ -1,58 +1,52 @@
---module GpsDataMining (getGpsEvents) where
+module GpsDataMining () where
 
 import Data.List
 import Data.Time.Clock
-import Geo.Computations
+import GpsData
 import Sublist
 
 {- GPS data mining -}
 
---getGpsEvents :: [Point] -> [Sublist Point]
+--getGpsEvents :: [Position] -> [Sublist Position]
 --getGpsEvents track =
 
 shortTime = 300
 
--- nextShortTime returns a sublist of points spanning at least the 5 next minutes
-nextShortTime :: Sublist Point -> Sublist Point
+-- nextShortTime returns a sublist of Positions spanning at least the 5 next minutes
+nextShortTime :: Sublist Position -> Sublist Position
 nextShortTime l =
-	case pntTime $ sHead l of
-	Nothing -> nextShortTime (sTail l)
-	Just begin ->
-		sTakeUntil
-			(\last ->
-				case pntTime last of
-				Nothing -> False
-				Just end -> end `diffUTCTime` begin >= shortTime
-			) l
+	if sEmpty l then fromList [] else
+	let begin = pos_date $ sHead l in
+	sTakeUntil (\last -> pos_date last `diffUTCTime` begin >= shortTime) l
 
--- diameter returns the maximal distance between two points of the sublist
-diameter :: Sublist Point -> Double
+-- diameter returns the maximal distance between two Positions of the sublist
+diameter :: Sublist Position -> Double
 diameter l =
 	if sLength l <= 1 then 0 else
 		let hd = sHead l in
 		let tl = sTail l in
-		sFoldr (\pnt tmpMax -> max tmpMax $ distance hd pnt) (diameter tl) tl
+		sFoldr (\pos tmpMax -> max tmpMax $ pos_distance hd pos) (diameter tl) tl
 
-shortDistance = 30 -- depends on the accuracy of geo points
+shortDistance = 30 -- depends on the accuracy of gps data
 
-sTotalDistance :: Sublist Point -> Double
+sTotalDistance :: Sublist Position -> Double
 sTotalDistance l =
 	if sLength l <= 1 then 0 else
 		let tl = sTail l in
-		sTotalDistance tl + distance (sHead l) (sHead tl)
+		sTotalDistance tl + pos_distance (sHead l) (sHead tl)
 
-timeSpan :: Sublist Point -> NominalDiffTime
+timeSpan :: Sublist Position -> Double
 timeSpan l =
 	if sLength l <= 1 then 0 else
-		case (pntTime $ sHead l , sLast l >>= pntTime) of
-		(Just begin , Just end) -> end `diffUTCTime` begin
+		case (sLast l) of
+		(Just last) -> realToFrac $ pos_date last `diffUTCTime` pos_date (sHead l)
 		_ -> 0
 
-efficientTravelDistance l = sTotalDistance l * 120 / timeSpan
+efficientTravelDistance l = sTotalDistance l * 120 / timeSpan l
 
 isEvent l = diameter l <= max shortDistance (efficientTravelDistance l)
 
 -- nextEvent returns the next event (merging the successive 5 minutes events)
 -- and the rest of the list
---nextEvent :: Sublist Point -> (Sublist Point , Sublist Point)
+--nextEvent :: Sublist Position -> (Sublist Position , Sublist Position)
 --nextEvent l = sTakeSublistsWhile nextShortTime isEvent
