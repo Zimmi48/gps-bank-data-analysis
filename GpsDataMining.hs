@@ -19,7 +19,8 @@ getGpsEvents :: [Position] -> [[Position]]
 getGpsEvents = unfoldr nextEvent
 
 -- nextEvent returns the next event (merging the successive 5 minutes events)
--- and the rest of the list
+-- and the rest of the list minus the head
+-- (because there must be a hole between events)
 nextEvent :: [Position] -> Maybe ([Position] , [Position])
 nextEvent [] = Nothing
 nextEvent input =
@@ -29,7 +30,9 @@ nextEvent input =
 	in
 	case sTakeSublistsWhile nextShortEvent $ fromList input of
 	0 -> nextEvent (tail input)
-	nextEventSize -> Just $ splitAt (nextEventSize - 1) input
+	nextEventSize ->
+	let (e , remaining) = splitAt (nextEventSize - 1) input in
+	Just (e , drop 1 remaining)
 
 -- nextShortTime returns a prefix size of Positions spanning at least the 5 next minutes
 nextShortTime :: Sublist Position -> Int
