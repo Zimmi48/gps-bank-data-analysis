@@ -1,4 +1,4 @@
-module GpsDataMining () where
+module GpsDataMining (getGpsEvents, nextEvent) where
 
 import Data.List
 import Data.Time.Clock
@@ -7,15 +7,34 @@ import Sublist
 
 {- GPS data mining -}
 
---getGpsEvents :: [Position] -> [Sublist Position]
---getGpsEvents track =
-
 shortTime = 300
+shortDistance = 30 -- depends on the accuracy of gps data
 
--- nextShortTime returns a sublist of Positions spanning at least the 5 next minutes
-nextShortTime :: Sublist Position -> Sublist Position
+data Event = Event {
+	positions :: [Position] ,
+	event_span :: Double
+}
+
+getGpsEvents :: [Position] -> [[Position]]
+getGpsEvents = unfoldr nextEvent
+
+-- nextEvent returns the next event (merging the successive 5 minutes events)
+-- and the rest of the list
+nextEvent :: [Position] -> Maybe ([Position] , [Position])
+nextEvent [] = Nothing
+nextEvent input =
+	let nextShortEvent l =
+		let sublist = nextShortTime l in
+		if (isEvent $ sPrefix sublist l) then sublist else 0
+	in
+	case sTakeSublistsWhile nextShortEvent $ fromList input of
+	0 -> nextEvent (tail input)
+	nextEventSize -> Just $ splitAt (nextEventSize - 1) input
+
+-- nextShortTime returns a prefix size of Positions spanning at least the 5 next minutes
+nextShortTime :: Sublist Position -> Int
 nextShortTime l =
-	if sEmpty l then fromList [] else
+	if sEmpty l then 0 else
 	let begin = pos_date $ sHead l in
 	sTakeUntil (\last -> pos_date last `diffUTCTime` begin >= shortTime) l
 
@@ -26,8 +45,6 @@ diameter l =
 		let hd = sHead l in
 		let tl = sTail l in
 		sFoldr (\pos tmpMax -> max tmpMax $ pos_distance hd pos) (diameter tl) tl
-
-shortDistance = 30 -- depends on the accuracy of gps data
 
 sTotalDistance :: Sublist Position -> Double
 sTotalDistance l =
@@ -45,8 +62,3 @@ timeSpan l =
 efficientTravelDistance l = sTotalDistance l * 120 / timeSpan l
 
 isEvent l = diameter l <= max shortDistance (efficientTravelDistance l)
-
--- nextEvent returns the next event (merging the successive 5 minutes events)
--- and the rest of the list
---nextEvent :: Sublist Position -> (Sublist Position , Sublist Position)
---nextEvent l = sTakeSublistsWhile nextShortTime isEvent

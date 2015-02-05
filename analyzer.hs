@@ -9,6 +9,7 @@ import Data.Maybe
 import BankData
 import GpsData
 import InputReader
+import GpsDataMining
 
 main = do
 	args <- getArgs
@@ -16,16 +17,20 @@ main = do
 		[bank_file , gps_file , begin , end] -> do
 			inp_bank <- openFile bank_file ReadMode
 			inp_gps <- openFile gps_file ReadMode
-			let beginDate = readTime defaultTimeLocale "%Y-%m-%d" begin
-			let endDate   = readTime defaultTimeLocale "%Y-%m-%d" end
+			let beginDate = readTime defaultTimeLocale "%Y-%m-%d %H:%M:%S" begin
+			let endDate   = readTime defaultTimeLocale "%Y-%m-%d %H:%M:%S" end
 			bank <- hGetContents inp_bank
 			gps  <- hGetContents inp_gps
 			let debits = getDebits bank $ Just (beginDate , endDate)
 			let positions = getPositions gps $ Just (beginDate , endDate)
 			putStrLn $ "Between " ++ begin ++ " and " ++ end ++ ", you recorded:"
 			putStrLn $ show (length positions) ++ " positions,"
-			putStr $ show (length debits) ++ " transactions at "
-			putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."
+			case nextEvent positions of
+				Just (nextEvent , _) -> print nextEvent
+				_ -> print "no event"
+			--putStrLn $ "which were divided into " ++ show (length $ getGpsEvents positions) ++ " events."
+			--putStr $ show (length debits) ++ " transactions at "
+			--putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."
 			--print $ nub $ map name debits
 			
 			-- time between two positions
