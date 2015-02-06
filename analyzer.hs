@@ -25,9 +25,7 @@ main = do
 			let positions = getPositions gps $ Just (beginDate , endDate)
 			putStrLn $ "Between " ++ begin ++ " and " ++ end ++ ", you recorded:"
 			putStrLn $ show (length positions) ++ " positions,"
-			case nextEvent positions of
-				Just (nextEvent , _) -> print nextEvent
-				_ -> print "no event"
+			print . all isFixed $ getGpsEvents positions
 			--putStrLn $ "which were divided into " ++ show (length $ getGpsEvents positions) ++ " events."
 			--putStr $ show (length debits) ++ " transactions at "
 			--putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."

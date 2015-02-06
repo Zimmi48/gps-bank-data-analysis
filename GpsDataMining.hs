@@ -1,4 +1,4 @@
-module GpsDataMining (getGpsEvents, nextEvent) where
+module GpsDataMining (getGpsEvents, nextEvent, nextShortTime, isEvent, isFixed) where
 
 import Data.List
 import Data.Time.Clock
@@ -11,17 +11,42 @@ shortTime = 300
 shortDistance = 30 -- depends on the accuracy of gps data
 
 data Event = Event {
-	positions :: [Position] ,
-	event_span :: Double
+	event_positions :: [Position],
+	event_begin :: UTCTime,
+	event_end :: UTCTime,
+	event_totalDistance :: Double,
+	event_diameter :: Double
+}
+instance Show Event where
+	show e =
+		"Event { begin = " ++ show (event_begin e) ++
+		", end = " ++ show (event_end e) ++
+		", totalDistance = " ++ show (event_totalDistance e) ++
+		", diameter = " ++ show (event_diameter e) ++ " }"
+
+toEvent :: [Position] -> Maybe Event
+toEvent [] = Nothing
+toEvent l  = return $ Event {
+	event_positions = l,
+	event_begin = pos_date $ head l,
+	event_end = pos_date $ last l,
+	event_totalDistance = sTotalDistance $ fromList l, -- this is ugly
+	event_diameter = diameter $ fromList l -- this is ugly
 }
 
-getGpsEvents :: [Position] -> [[Position]]
+isFixed :: Event -> Bool
+isFixed = aux .  event_positions where
+	aux [] = True
+	aux (hd : []) = True
+	aux (hd1 : hd2 : tl) = sameLocation hd1 hd2 && aux (hd2 : tl)
+
+getGpsEvents :: [Position] -> [Event]
 getGpsEvents = unfoldr nextEvent
 
 -- nextEvent returns the next event (merging the successive 5 minutes events)
 -- and the rest of the list minus the head
 -- (because there must be a hole between events)
-nextEvent :: [Position] -> Maybe ([Position] , [Position])
+nextEvent :: [Position] -> Maybe (Event , [Position])
 nextEvent [] = Nothing
 nextEvent input =
 	let nextShortEvent l =
@@ -31,8 +56,10 @@ nextEvent input =
 	case sTakeSublistsWhile nextShortEvent $ fromList input of
 	0 -> nextEvent (tail input)
 	nextEventSize ->
-	let (e , remaining) = splitAt (nextEventSize - 1) input in
-	Just (e , drop 1 remaining)
+		let (event_pos , remaining) = splitAt nextEventSize input in
+		do
+			e <- toEvent event_pos
+			return (e , drop 1 remaining)
 
 -- nextShortTime returns a prefix size of Positions spanning at least the 5 next minutes
 nextShortTime :: Sublist Position -> Int

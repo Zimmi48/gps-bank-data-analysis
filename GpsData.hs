@@ -1,4 +1,4 @@
-module GpsData (Position(Position) , pos_date , pos_distance) where
+module GpsData (Position(Position) , pos_date , pos_distance , sameLocation) where
 
 import Data.Time
 import Data.Function
@@ -21,3 +21,8 @@ toPoint pos = pt (pos_latitude pos) (pos_longitude pos) Nothing (Just $ pos_date
 
 pos_distance :: Position -> Position -> Double
 pos_distance = distance `on` toPoint
+
+sameLocation :: Position -> Position -> Bool
+sameLocation l1 l2 =
+	pos_latitude l1 == pos_latitude l2 &&
+	pos_longitude l1 == pos_longitude l2
