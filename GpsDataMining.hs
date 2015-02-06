@@ -1,4 +1,4 @@
-module GpsDataMining (getGpsEvents, nextEvent, nextShortTime, isEvent, isFixed) where
+module GpsDataMining (getGpsEvents , isFixed) where
 
 import Data.List
 import Data.Time.Clock
@@ -16,6 +16,8 @@ data Event = Event {
 	event_end :: UTCTime,
 	event_totalDistance :: Double,
 	event_diameter :: Double
+	--latitude :: Double,
+	--longitude :: Double
 }
 instance Show Event where
 	show e =
@@ -32,13 +34,12 @@ toEvent l  = return $ Event {
 	event_end = pos_date $ last l,
 	event_totalDistance = sTotalDistance $ fromList l, -- this is ugly
 	event_diameter = diameter $ fromList l -- this is ugly
+	--latitude = 
 }
 
+
 isFixed :: Event -> Bool
-isFixed = aux .  event_positions where
-	aux [] = True
-	aux (hd : []) = True
-	aux (hd1 : hd2 : tl) = sameLocation hd1 hd2 && aux (hd2 : tl)
+isFixed = (==0) . event_diameter
 
 getGpsEvents :: [Position] -> [Event]
 getGpsEvents = unfoldr nextEvent

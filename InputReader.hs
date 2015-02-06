@@ -68,7 +68,7 @@ getPositions input maybeBeginEnd =
 	let (dates , coords) = dates_coords contents in
 	let track =
 		zipWith (\date coord ->
-			let latitude : longitude : _ = splitOn " " coord in
+			let longitude : latitude : _ = splitOn " " coord in
 			Position (read latitude) (read longitude) (readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
 		) dates coords in
 	reverse $ case maybeBeginEnd of
