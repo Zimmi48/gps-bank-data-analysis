@@ -6,6 +6,7 @@ import Data.Time
 --import Data.Function
 import Data.List
 import Data.Maybe
+import Text.Printf
 import BankData
 import GpsData
 import InputReader
@@ -24,10 +25,10 @@ main = do
 			let debits = getDebits bank $ Just (beginDate , endDate)
 			let positions = getPositions gps $ Just (beginDate , endDate)
 			putStrLn $ "Between " ++ begin ++ " and " ++ end ++ ", you recorded:"
-			putStrLn $ show (length positions) ++ " positions."
+			printf "%d positions.\n" $ length positions
 			let events = getGpsEvents positions
-			putStrLn $ "We found " ++ show (length events) ++ " events"
-			putStrLn $ "Among these, " ++ show (length . filter isFixed $ events) ++ " are fixed."
+			printf "We found %d events.\n" $ length events
+			printf "Among these, %d are fixed.\n" (length . filter isFixed $ events)
 			--putStrLn $ "which were divided into " ++ show (length $ getGpsEvents positions) ++ " events."
 			--putStr $ show (length debits) ++ " transactions at "
 			--putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."
