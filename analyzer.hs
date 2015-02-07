@@ -29,7 +29,11 @@ main = do
 			let events = getGpsEvents positions
 			printf "We found %d events.\n" $ length events
 			printf "Among these, %d are fixed.\n" (length . filter isFixed $ events)
-			--putStrLn $ "which were divided into " ++ show (length $ getGpsEvents positions) ++ " events."
+			let nonfixed_events = filter (not . isFixed) events
+			printf
+				"The others have an average diameter of %f meters.\n"
+				( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
+			
 			--putStr $ show (length debits) ++ " transactions at "
 			--putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."
 			--print $ nub $ map name debits

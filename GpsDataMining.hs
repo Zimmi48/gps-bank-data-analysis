@@ -1,6 +1,8 @@
-module GpsDataMining (getGpsEvents , isFixed) where
+module GpsDataMining (getGpsEvents , isFixed , event_diameter) where
 
 import Data.List
+import Data.Maybe
+import Data.Function
 import Data.Time.Clock
 import GpsData
 import Sublist
@@ -10,19 +12,22 @@ import Sublist
 shortTime = 300
 shortDistance = 30 -- depends on the accuracy of gps data
 
+getGpsEvents :: [Position] -> [Event]
+getGpsEvents = map (foldr1 merge) . groupBy interesect . unfoldr nextEvent
+
 data Event = Event {
-	event_positions :: [Position],
-	event_begin :: UTCTime,
-	event_end :: UTCTime,
+	event_all_positions :: [Position],
+	event_position :: Position,
+	event_span :: NominalDiffTime,
 	event_totalDistance :: Double,
-	event_diameter :: Double,
-	event_latitude :: Double,
-	event_longitude :: Double
+	event_diameter :: Double
 }
 instance Show Event where
 	show e =
-		"Event { begin = " ++ show (event_begin e) ++
-		", end = " ++ show (event_end e) ++
+		let begin = pos_date $ event_position e in
+		let end = addUTCTime (event_span e) begin in
+		"Event { begin = " ++ show begin ++
+		", end = " ++ show end ++
 		", totalDistance = " ++ show (event_totalDistance e) ++
 		", diameter = " ++ show (event_diameter e) ++ " }"
 
@@ -30,21 +35,23 @@ toEvent :: [Position] -> Maybe Event
 toEvent [] = Nothing
 toEvent l  =
 	let Just (lat , lon) = barycenter l in
+	let begin = pos_date $ head l in
 	return $ Event {
-		event_positions = l,
-		event_begin = pos_date $ head l,
-		event_end = pos_date $ last l,
+		event_all_positions = l,
+		event_position = Position lat lon begin,
+		event_span = (pos_date $ last l) `diffUTCTime` begin,
 		event_totalDistance = sTotalDistance $ fromList l, -- this is ugly
-		event_diameter = diameter $ fromList l, -- this is ugly
-		event_latitude = lat,
-		event_longitude = lon
+		event_diameter = diameter $ fromList l -- this is ugly
 	}
 
 isFixed :: Event -> Bool
 isFixed = (==0) . event_diameter
 
-getGpsEvents :: [Position] -> [Event]
-getGpsEvents = unfoldr nextEvent
+interesect :: Event -> Event -> Bool
+interesect e1 e2 = pos_distance (event_position e1) (event_position e2) < event_diameter e1 + event_diameter e2
+
+merge :: Event -> Event -> Event
+merge e = fromMaybe e . toEvent . on (++) event_all_positions e
 
 -- nextEvent returns the next event (merging the successive 5 minutes events)
 -- and the rest of the list minus the head
