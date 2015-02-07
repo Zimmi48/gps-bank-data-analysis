@@ -15,9 +15,9 @@ data Event = Event {
 	event_begin :: UTCTime,
 	event_end :: UTCTime,
 	event_totalDistance :: Double,
-	event_diameter :: Double
-	--latitude :: Double,
-	--longitude :: Double
+	event_diameter :: Double,
+	event_latitude :: Double,
+	event_longitude :: Double
 }
 instance Show Event where
 	show e =
@@ -28,15 +28,17 @@ instance Show Event where
 
 toEvent :: [Position] -> Maybe Event
 toEvent [] = Nothing
-toEvent l  = return $ Event {
-	event_positions = l,
-	event_begin = pos_date $ head l,
-	event_end = pos_date $ last l,
-	event_totalDistance = sTotalDistance $ fromList l, -- this is ugly
-	event_diameter = diameter $ fromList l -- this is ugly
-	--latitude = 
-}
-
+toEvent l  =
+	let Just (lat , lon) = barycenter l in
+	return $ Event {
+		event_positions = l,
+		event_begin = pos_date $ head l,
+		event_end = pos_date $ last l,
+		event_totalDistance = sTotalDistance $ fromList l, -- this is ugly
+		event_diameter = diameter $ fromList l, -- this is ugly
+		event_latitude = lat,
+		event_longitude = lon
+	}
 
 isFixed :: Event -> Bool
 isFixed = (==0) . event_diameter

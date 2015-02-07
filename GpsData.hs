@@ -1,4 +1,4 @@
-module GpsData (Position(Position) , pos_date , pos_distance , sameLocation) where
+module GpsData (Position(Position) , pos_date , pos_distance , sameLocation , barycenter) where
 
 import Data.Time
 import Data.Function
@@ -26,3 +26,11 @@ sameLocation :: Position -> Position -> Bool
 sameLocation l1 l2 =
 	pos_latitude l1 == pos_latitude l2 &&
 	pos_longitude l1 == pos_longitude l2
+
+barycenter :: [Position] -> Maybe (Double , Double)
+barycenter [] = Nothing
+barycenter l =
+	let lat_sum = sum . map pos_latitude $ l in
+	let lon_sum = sum . map pos_longitude $ l in
+	let n = fromIntegral $ length l in
+	Just $ (lat_sum / n , lon_sum / n)
