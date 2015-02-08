@@ -10,7 +10,7 @@ import Sublist
 {- GPS data mining -}
 
 shortTime = 300
-shortDistance = 30 -- depends on the accuracy of gps data
+shortDistance = 100 -- depends on the accuracy of gps data
 
 getGpsEvents :: [Position] -> [Event]
 getGpsEvents = map (foldr1 merge) . groupBy interesect . unfoldr nextEvent
@@ -34,11 +34,11 @@ instance Show Event where
 toEvent :: [Position] -> Maybe Event
 toEvent [] = Nothing
 toEvent l  =
-	let Just (lat , lon) = barycenter l in
+	let Just loc = barycenter $ map pos_location l in
 	let begin = pos_date $ head l in
 	return $ Event {
 		event_all_positions = l,
-		event_position = Position lat lon begin,
+		event_position = Position loc begin,
 		event_span = (pos_date $ last l) `diffUTCTime` begin,
 		event_totalDistance = sTotalDistance $ fromList l, -- this is ugly
 		event_diameter = diameter $ fromList l -- this is ugly
