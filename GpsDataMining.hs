@@ -1,4 +1,4 @@
-module GpsDataMining (getGpsEvents , isFixed , event_diameter) where
+module GpsDataMining (getGpsEvents , getAllPlaces , isFixed , event_diameter) where
 
 import Data.List
 import Data.Maybe
@@ -12,8 +12,15 @@ import Sublist
 shortTime = 300
 shortDistance = 100 -- depends on the accuracy of gps data
 
+getAllPlaces :: [Event] -> [Place]
+getAllPlaces [] = []
+getAllPlaces (hd : tl) =
+	let current = event_place hd in
+	let (here , elsewhere) = partition (place_intersect current) (getAllPlaces tl) in
+	foldr place_merge current here : elsewhere
+
 getGpsEvents :: [Position] -> [Event]
-getGpsEvents = map (foldr1 merge) . groupBy (place_intersect `on` event_place) . unfoldr nextEvent
+getGpsEvents = map (foldr1 event_merge) . groupBy (place_intersect `on` event_place) . unfoldr nextEvent
 
 data Event = Event {
 	event_all_positions :: [Position],
@@ -54,8 +61,8 @@ isFixed = (==0) . event_diameter
 -- This is quite a strange way of merging successive events because the
 -- positions that separated the successive events are completely lost...
 -- But we can argue that they were probably unacurrate.
-merge :: Event -> Event -> Event
-merge e = fromMaybe e . toEvent . on (++) event_all_positions e
+event_merge :: Event -> Event -> Event
+event_merge e = fromMaybe e . toEvent . on (++) event_all_positions e
 
 -- nextEvent returns the next event (merging the successive 5 minutes events)
 -- and the rest of the list minus the head
