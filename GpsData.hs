@@ -6,8 +6,8 @@ module GpsData (
 	pos_date,
 	loc_distance,
 	place_diameter,
-	place_distance,
-	interesect,
+	place_intersect,
+	place_merge,
 	sameLocation,
 	barycenter,
 	diameter,
@@ -43,6 +43,9 @@ instance Ord Position
 toPoint :: Location -> Point
 toPoint pos = pt (loc_latitude pos) (loc_longitude pos) Nothing Nothing
 
+fromPoint :: Point -> Location
+fromPoint pt = Location (pntLat pt) (pntLon pt)
+
 loc_distance :: Location -> Location -> Double
 loc_distance = distance `on` toPoint
 
@@ -51,24 +54,32 @@ sameLocation l1 l2 =
 	loc_latitude l1 == loc_latitude l2 &&
 	loc_longitude l1 == loc_longitude l2
 
-place_distance = loc_distance `on` place_center
+loc_interpolate :: Location -> Location -> Double -> Location
+loc_interpolate l1 l2 w = fromPoint $ interpolate (toPoint l1) (toPoint l2) w
+
+place_centers_distance = loc_distance `on` place_center
 
 contains :: Place -> Place -> Bool
-p1 `contains` p2 = 2 * place_distance p1 p2 < place_diameter p1 - place_diameter p2
+p1 `contains` p2 = 2 * place_centers_distance p1 p2 < place_diameter p1 - place_diameter p2
 	
-interesect :: Place -> Place -> Bool
-interesect p1 p2 = 2 * place_distance p1 p2 < place_diameter p1 + place_diameter p2
+place_intersect :: Place -> Place -> Bool
+place_intersect p1 p2 = 2 * place_centers_distance p1 p2 < place_diameter p1 + place_diameter p2
 
 place_merge :: Place -> Place -> Place
 place_merge p1 p2 =
 	if p1 `contains` p2 then p1
 	else if p2 `contains` p1 then p2
 	else
-		let new_diameter = place_distance p1 p2 + (place_diameter p1 + place_diameter p2) / 2 in
-		Place () new_diameter
+		let dist = place_centers_distance p1 p2 in
+		let new_diameter = dist + (place_diameter p1 + place_diameter p2) / 2 in
+		Place
+			(loc_interpolate (place_center p1) (place_center p2) $
+				1/2 + (place_diameter p2 - place_diameter p1) / (4 * dist)
+			) new_diameter
 
 {- Functions on lists of locations -}
 
+-- this code is probably incorrect, it should be improved with the use of addVector
 barycenter :: [Location] -> Maybe Location
 barycenter [] = Nothing
 barycenter l =

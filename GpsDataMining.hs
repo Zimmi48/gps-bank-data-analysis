@@ -13,7 +13,7 @@ shortTime = 300
 shortDistance = 100 -- depends on the accuracy of gps data
 
 getGpsEvents :: [Position] -> [Event]
-getGpsEvents = map (foldr1 merge) . groupBy (interesect `on` event_place) . unfoldr nextEvent
+getGpsEvents = map (foldr1 merge) . groupBy (place_intersect `on` event_place) . unfoldr nextEvent
 
 data Event = Event {
 	event_all_positions :: [Position],
