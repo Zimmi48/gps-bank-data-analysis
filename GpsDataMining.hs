@@ -35,10 +35,10 @@ toEvent :: [Position] -> Maybe Event
 toEvent [] = Nothing
 toEvent pos  =
 	let locs = map pos_location pos in
-	let Just loc = barycenter locs in
 	let begin = pos_date $ head pos in
 	let end = pos_date $ last pos in
-	return $ Event {
+	barycenter locs >>=
+	\loc -> return $ Event {
 		event_all_positions = pos,
 		event_location = loc,
 		event_begin = begin,
