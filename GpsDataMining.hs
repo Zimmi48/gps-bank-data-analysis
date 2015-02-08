@@ -40,8 +40,8 @@ toEvent l  =
 		event_all_positions = l,
 		event_position = Position loc begin,
 		event_span = (pos_date $ last l) `diffUTCTime` begin,
-		event_totalDistance = sTotalDistance $ fromList l, -- this is ugly
-		event_diameter = diameter $ fromList l -- this is ugly
+		event_totalDistance = sTotalDistance l,
+		event_diameter = diameter l
 	}
 
 isFixed :: Event -> Bool
@@ -78,27 +78,8 @@ nextShortTime l =
 	let begin = pos_date $ sHead l in
 	sTakeUntil (\last -> pos_date last `diffUTCTime` begin >= shortTime) l
 
--- diameter returns the maximal distance between two Positions of the sublist
-diameter :: Sublist Position -> Double
-diameter l =
-	if sLength l <= 1 then 0 else
-		let hd = sHead l in
-		let tl = sTail l in
-		sFoldr (\pos tmpMax -> max tmpMax $ pos_distance hd pos) (diameter tl) tl
-
-sTotalDistance :: Sublist Position -> Double
-sTotalDistance l =
-	if sLength l <= 1 then 0 else
-		let tl = sTail l in
-		sTotalDistance tl + pos_distance (sHead l) (sHead tl)
-
-timeSpan :: Sublist Position -> Double
-timeSpan l =
-	if sLength l <= 1 then 0 else
-		case (sLast l) of
-		(Just last) -> realToFrac $ pos_date last `diffUTCTime` pos_date (sHead l)
-		_ -> 0
-
 efficientTravelDistance l = sTotalDistance l * 120 / timeSpan l
 
-isEvent l = diameter l <= max shortDistance (efficientTravelDistance l)
+isEvent sl =
+	let l = toList sl in
+	diameter l <= max shortDistance (efficientTravelDistance l)

@@ -6,7 +6,10 @@ module GpsData (
 	pos_distance,
 	loc_distance,
 	sameLocation,
-	barycenter
+	barycenter,
+	diameter,
+	sTotalDistance,
+	timeSpan
 ) where
 
 import Data.Time
@@ -43,6 +46,8 @@ sameLocation l1 l2 =
 	loc_latitude l1 == loc_latitude l2 &&
 	loc_longitude l1 == loc_longitude l2
 
+{- Functions on lists of locations -}
+
 barycenter :: [Location] -> Maybe Location
 barycenter [] = Nothing
 barycenter l =
@@ -50,3 +55,20 @@ barycenter l =
 	let lon_sum = sum . map loc_longitude $ l in
 	let n = fromIntegral $ length l in
 	Just $ Location (lat_sum / n) (lon_sum / n)
+	
+-- diameter returns the maximal distance between two Positions of the sublist
+diameter :: [Position] -> Double
+diameter [] = 0
+diameter [_] = 0
+diameter (hd : tl) = foldr (\pos tmpMax -> max tmpMax $ pos_distance hd pos) (diameter tl) tl
+
+sTotalDistance :: [Position] -> Double
+sTotalDistance [] = 0
+sTotalDistance [_] = 0
+sTotalDistance (hd1 : hd2 : tl) = sTotalDistance (hd2 : tl) + pos_distance hd1 hd2
+
+timeSpan :: [Position] -> Double
+timeSpan [] = 0
+timeSpan [_] = 0
+timeSpan (hd : tl) = realToFrac $ pos_date (last tl) `diffUTCTime` pos_date hd
+
