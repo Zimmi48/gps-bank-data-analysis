@@ -17,38 +17,42 @@ getGpsEvents = map (foldr1 merge) . groupBy interesect . unfoldr nextEvent
 
 data Event = Event {
 	event_all_positions :: [Position],
-	event_position :: Position,
+	event_location :: Location,
+	event_begin :: UTCTime,
+	event_end :: UTCTime,
 	event_span :: NominalDiffTime,
 	event_totalDistance :: Double,
 	event_diameter :: Double
 }
 instance Show Event where
 	show e =
-		let begin = pos_date $ event_position e in
-		let end = addUTCTime (event_span e) begin in
-		"Event { begin = " ++ show begin ++
-		", end = " ++ show end ++
+		"Event { begin = " ++ show (event_begin e) ++
+		", end = " ++ show (event_end e) ++
 		", totalDistance = " ++ show (event_totalDistance e) ++
 		", diameter = " ++ show (event_diameter e) ++ " }"
 
 toEvent :: [Position] -> Maybe Event
 toEvent [] = Nothing
-toEvent l  =
-	let Just loc = barycenter $ map pos_location l in
-	let begin = pos_date $ head l in
+toEvent pos  =
+	let locs = map pos_location pos in
+	let Just loc = barycenter locs in
+	let begin = pos_date $ head pos in
+	let end = pos_date $ last pos in
 	return $ Event {
-		event_all_positions = l,
-		event_position = Position loc begin,
-		event_span = (pos_date $ last l) `diffUTCTime` begin,
-		event_totalDistance = sTotalDistance l,
-		event_diameter = diameter l
+		event_all_positions = pos,
+		event_location = loc,
+		event_begin = begin,
+		event_end = end,
+		event_span = end `diffUTCTime` begin,
+		event_totalDistance = sTotalDistance locs,
+		event_diameter = diameter locs
 	}
 
 isFixed :: Event -> Bool
 isFixed = (==0) . event_diameter
 
 interesect :: Event -> Event -> Bool
-interesect e1 e2 = pos_distance (event_position e1) (event_position e2) < event_diameter e1 + event_diameter e2
+interesect e1 e2 = loc_distance (event_location e1) (event_location e2) < event_diameter e1 + event_diameter e2
 
 merge :: Event -> Event -> Event
 merge e = fromMaybe e . toEvent . on (++) event_all_positions e
@@ -78,8 +82,7 @@ nextShortTime l =
 	let begin = pos_date $ sHead l in
 	sTakeUntil (\last -> pos_date last `diffUTCTime` begin >= shortTime) l
 
-efficientTravelDistance l = sTotalDistance l * 120 / timeSpan l
-
 isEvent sl =
-	let l = toList sl in
-	diameter l <= max shortDistance (efficientTravelDistance l)
+	let pos = toList sl in
+	let loc = map pos_location pos in
+	diameter loc <= max shortDistance (sTotalDistance loc * 120 / timeSpan pos)

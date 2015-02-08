@@ -57,15 +57,15 @@ barycenter l =
 	Just $ Location (lat_sum / n) (lon_sum / n)
 	
 -- diameter returns the maximal distance between two Positions of the sublist
-diameter :: [Position] -> Double
+diameter :: [Location] -> Double
 diameter [] = 0
 diameter [_] = 0
-diameter (hd : tl) = foldr (\pos tmpMax -> max tmpMax $ pos_distance hd pos) (diameter tl) tl
+diameter (hd : tl) = foldr (\pos tmpMax -> max tmpMax $ loc_distance hd pos) (diameter tl) tl
 
-sTotalDistance :: [Position] -> Double
+sTotalDistance :: [Location] -> Double
 sTotalDistance [] = 0
 sTotalDistance [_] = 0
-sTotalDistance (hd1 : hd2 : tl) = sTotalDistance (hd2 : tl) + pos_distance hd1 hd2
+sTotalDistance (hd1 : hd2 : tl) = sTotalDistance (hd2 : tl) + loc_distance hd1 hd2
 
 timeSpan :: [Position] -> Double
 timeSpan [] = 0
