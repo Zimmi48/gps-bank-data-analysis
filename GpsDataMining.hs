@@ -5,7 +5,6 @@ import Data.Maybe
 import Data.Function
 import Data.Time.Clock
 import GpsData
-import Sublist
 
 {- GPS data mining -}
 
@@ -65,9 +64,9 @@ nextEvent [] = Nothing
 nextEvent input =
 	let nextShortEvent l =
 		let sublist = nextShortTime l in
-		if (isEvent $ sPrefix sublist l) then sublist else 0
+		if (isEvent $ take sublist l) then sublist else 0
 	in
-	case sTakeSublistsWhile nextShortEvent $ fromList input of
+	case sTakeSublistsWhile nextShortEvent input of
 	0 -> nextEvent (tail input)
 	nextEventSize ->
 		let (event_pos , remaining) = splitAt nextEventSize input in
@@ -75,14 +74,32 @@ nextEvent input =
 			e <- toEvent event_pos
 			return (e , drop 1 remaining)
 
--- nextShortTime returns a prefix size of Positions spanning at least the 5 next minutes
-nextShortTime :: Sublist Position -> Int
-nextShortTime l =
-	if sEmpty l then 0 else
-	let begin = pos_date $ sHead l in
-	sTakeUntil (\last -> pos_date last `diffUTCTime` begin >= shortTime) l
+-- the first argument is a function that given a sublist returns
+-- a prefix size
+-- what this function does is iteratively applying this function
+-- on the tails of its second argument until the prefix size returned is 0
+-- it will then return the prefix size obtained by merging all the prefixes
+-- returned up to this point
+sTakeSublistsWhile :: ([t] -> Int) -> [t] -> Int
+sTakeSublistsWhile _ [] = 0
+sTakeSublistsWhile f l =
+	let n = f l in
+	if n == 0 then 0 else max n $ sTakeSublistsWhile f $ tail l
 
-isEvent sl =
-	let pos = toList sl in
+-- nextShortTime returns a prefix size of Positions spanning at least the 5 next minutes
+nextShortTime :: [Position] -> Int
+nextShortTime [] = 0
+nextShortTime (hd : tl) =
+	sTakeUntil (\last -> pos_date last `diffUTCTime` pos_date hd >= shortTime) (hd : tl)
+
+-- returns the shortest prefix size such that
+-- the last prefix element verifies the condition
+sTakeUntil :: (t -> Bool) -> [t] -> Int
+sTakeUntil condition l =
+	case findIndex condition l of
+	Just i -> i + 1
+	Nothing -> length l
+
+isEvent pos =
 	let loc = map pos_location pos in
 	diameter loc <= max shortDistance (sTotalDistance loc * 120 / timeSpan pos)
