@@ -44,7 +44,7 @@ toEvent pos  =
 		event_begin = begin,
 		event_end = end,
 		event_span = end `diffUTCTime` begin,
-		event_totalDistance = sTotalDistance locs,
+		event_totalDistance = loc_totalDistance locs,
 		event_diameter = diameter locs
 	}
 
@@ -85,4 +85,4 @@ nextShortTime l =
 isEvent sl =
 	let pos = toList sl in
 	let loc = map pos_location pos in
-	diameter loc <= max shortDistance (sTotalDistance loc * 120 / timeSpan pos)
+	diameter loc <= max shortDistance (loc_totalDistance loc * 120 / timeSpan pos)
