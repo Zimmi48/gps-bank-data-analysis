@@ -1,4 +1,4 @@
-module GpsDataMining (getGpsEvents , getAllPlaces , isFixed , event_diameter) where
+module GpsDataMining (getGpsEvents , getAllPlaces , placeFrequency , isFixed , event_diameter) where
 
 import Data.List
 import Data.Maybe
@@ -12,14 +12,13 @@ import Sublist
 shortTime = 300
 shortDistance = 100 -- depends on the accuracy of gps data
 
-getAllPlaces :: [Event] -> [Place]
-getAllPlaces [] = []
-getAllPlaces (hd : tl) =
-	let current = event_place hd in
-	let (here , elsewhere) = partition (place_intersect current) (getAllPlaces tl) in
-	foldr place_merge current here : elsewhere
+-- looks like this way of merging places is too large and almost everything end up in the same place
+getAllPlaces = places_merge . map event_place
+
+placeFrequency places events = map (\pl -> length . filter (contains pl . event_place) $ events) places
 
 getGpsEvents :: [Position] -> [Event]
+-- doing the merge or not does not seem to have a high impact on the number of distinct places
 getGpsEvents = map (foldr1 event_merge) . groupBy (place_intersect `on` event_place) . unfoldr nextEvent
 
 data Event = Event {

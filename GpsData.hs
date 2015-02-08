@@ -7,7 +7,9 @@ module GpsData (
 	loc_distance,
 	place_diameter,
 	place_intersect,
+	contains,
 	place_merge,
+	places_merge,
 	sameLocation,
 	barycenter,
 	diameter,
@@ -15,6 +17,7 @@ module GpsData (
 	timeSpan
 ) where
 
+import Data.List
 import Data.Time
 import Data.Function
 import Geo.Computations
@@ -60,10 +63,10 @@ loc_interpolate l1 l2 w = fromPoint $ interpolate (toPoint l1) (toPoint l2) w
 place_centers_distance = loc_distance `on` place_center
 
 contains :: Place -> Place -> Bool
-p1 `contains` p2 = 2 * place_centers_distance p1 p2 < place_diameter p1 - place_diameter p2
+p1 `contains` p2 = 2 * place_centers_distance p1 p2 <= place_diameter p1 - place_diameter p2
 	
 place_intersect :: Place -> Place -> Bool
-place_intersect p1 p2 = 2 * place_centers_distance p1 p2 < place_diameter p1 + place_diameter p2
+place_intersect p1 p2 = 2 * place_centers_distance p1 p2 <= place_diameter p1 + place_diameter p2
 
 place_merge :: Place -> Place -> Place
 place_merge p1 p2 =
@@ -106,3 +109,11 @@ timeSpan [] = 0
 timeSpan [_] = 0
 timeSpan (hd : tl) = realToFrac $ pos_date (last tl) `diffUTCTime` pos_date hd
 
+{- Functions on list of places -}
+
+-- we should probably repeat the operation until we reach a fixpoint
+places_merge :: [Place] -> [Place]
+places_merge [] = []
+places_merge (hd : tl) =
+	let (here , elsewhere) = partition (place_intersect hd) (places_merge tl) in
+	foldr place_merge hd here : elsewhere
