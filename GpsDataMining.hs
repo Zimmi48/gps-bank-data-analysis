@@ -13,16 +13,15 @@ shortTime = 300
 shortDistance = 100 -- depends on the accuracy of gps data
 
 getGpsEvents :: [Position] -> [Event]
-getGpsEvents = map (foldr1 merge) . groupBy interesect . unfoldr nextEvent
+getGpsEvents = map (foldr1 merge) . groupBy (interesect `on` event_place) . unfoldr nextEvent
 
 data Event = Event {
 	event_all_positions :: [Position],
-	event_location :: Location,
+	event_place :: Place,
 	event_begin :: UTCTime,
 	event_end :: UTCTime,
 	event_span :: NominalDiffTime,
-	event_totalDistance :: Double,
-	event_diameter :: Double
+	event_totalDistance :: Double
 }
 instance Show Event where
 	show e =
@@ -31,6 +30,8 @@ instance Show Event where
 		", totalDistance = " ++ show (event_totalDistance e) ++
 		", diameter = " ++ show (event_diameter e) ++ " }"
 
+event_diameter = place_diameter . event_place
+	
 toEvent :: [Position] -> Maybe Event
 toEvent [] = Nothing
 toEvent pos  =
@@ -40,20 +41,19 @@ toEvent pos  =
 	barycenter locs >>=
 	\loc -> return $ Event {
 		event_all_positions = pos,
-		event_location = loc,
+		event_place = Place loc $ diameter locs,
 		event_begin = begin,
 		event_end = end,
 		event_span = end `diffUTCTime` begin,
-		event_totalDistance = loc_totalDistance locs,
-		event_diameter = diameter locs
+		event_totalDistance = loc_totalDistance locs
 	}
 
 isFixed :: Event -> Bool
 isFixed = (==0) . event_diameter
 
-interesect :: Event -> Event -> Bool
-interesect e1 e2 = loc_distance (event_location e1) (event_location e2) < event_diameter e1 + event_diameter e2
-
+-- This is quite a strange way of merging successive events because the
+-- positions that separated the successive events are completely lost...
+-- But we can argue that they were probably unacurrate.
 merge :: Event -> Event -> Event
 merge e = fromMaybe e . toEvent . on (++) event_all_positions e
 

@@ -1,10 +1,13 @@
 module GpsData (
 	Position(Position),
 	Location(Location),
+	Place(Place),
 	pos_location,
 	pos_date,
-	pos_distance,
 	loc_distance,
+	place_diameter,
+	place_distance,
+	interesect,
 	sameLocation,
 	barycenter,
 	diameter,
@@ -20,6 +23,11 @@ data Location = Location {
 	loc_latitude :: Double,
 	loc_longitude :: Double
 } deriving (Show, Eq, Ord)
+
+data Place = Place {
+	place_center :: Location,
+	place_diameter :: Double
+} deriving (Show, Eq)
 
 data Position = Position {
 	pos_location :: Location,
@@ -38,13 +46,26 @@ toPoint pos = pt (loc_latitude pos) (loc_longitude pos) Nothing Nothing
 loc_distance :: Location -> Location -> Double
 loc_distance = distance `on` toPoint
 
-pos_distance :: Position -> Position -> Double
-pos_distance = loc_distance `on` pos_location
-
 sameLocation :: Location -> Location -> Bool
 sameLocation l1 l2 =
 	loc_latitude l1 == loc_latitude l2 &&
 	loc_longitude l1 == loc_longitude l2
+
+place_distance = loc_distance `on` place_center
+
+contains :: Place -> Place -> Bool
+p1 `contains` p2 = 2 * place_distance p1 p2 < place_diameter p1 - place_diameter p2
+	
+interesect :: Place -> Place -> Bool
+interesect p1 p2 = 2 * place_distance p1 p2 < place_diameter p1 + place_diameter p2
+
+place_merge :: Place -> Place -> Place
+place_merge p1 p2 =
+	if p1 `contains` p2 then p1
+	else if p2 `contains` p1 then p2
+	else
+		let new_diameter = place_distance p1 p2 + (place_diameter p1 + place_diameter p2) / 2 in
+		Place () new_diameter
 
 {- Functions on lists of locations -}
 
@@ -66,6 +87,8 @@ loc_totalDistance :: [Location] -> Double
 loc_totalDistance [] = 0
 loc_totalDistance [_] = 0
 loc_totalDistance (hd1 : hd2 : tl) = loc_totalDistance (hd2 : tl) + loc_distance hd1 hd2
+
+{- Functions on lists of positions -}
 
 timeSpan :: [Position] -> Double
 timeSpan [] = 0
