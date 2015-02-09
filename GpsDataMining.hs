@@ -44,10 +44,9 @@ toEvent pos  =
 	let locs = map pos_location pos in
 	let begin = pos_date $ head pos in
 	let end = pos_date $ last pos in
-	barycenter locs >>=
-	\loc -> return $ Event {
+	return $ Event {
 		event_all_positions = pos,
-		event_place = Place loc $ diameter locs,
+		event_place = foldr1 place_merge $ map (flip Place 0) locs,
 		event_begin = begin,
 		event_end = end,
 		event_span = end `diffUTCTime` begin,
