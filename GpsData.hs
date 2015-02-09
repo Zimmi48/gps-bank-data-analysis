@@ -11,7 +11,6 @@ module GpsData (
 	place_merge,
 	places_merge,
 	sameLocation,
-	barycenter,
 	diameter,
 	loc_totalDistance,
 	timeSpan
@@ -81,15 +80,6 @@ place_merge p1 p2 =
 			) new_diameter
 
 {- Functions on lists of locations -}
-
--- this code is probably incorrect, it should be improved with the use of addVector
-barycenter :: [Location] -> Maybe Location
-barycenter [] = Nothing
-barycenter l =
-	let lat_sum = sum . map loc_latitude $ l in
-	let lon_sum = sum . map loc_longitude $ l in
-	let n = fromIntegral $ length l in
-	Just $ Location (lat_sum / n) (lon_sum / n)
 	
 -- diameter returns the maximal distance between two Positions of the sublist
 diameter :: [Location] -> Double
