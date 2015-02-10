@@ -1,9 +1,11 @@
 module GpsData (
 	Position(Position),
-	location,
-	Place(Place),
 	pos_location,
 	pos_date,
+	Location,
+	location,
+	Place,
+	place,
 	place_diameter,
 	place_intersect,
 	contains,
@@ -27,6 +29,7 @@ data Place = Place {
 	place_center :: Location,
 	place_diameter :: Double
 } deriving (Show, Eq)
+place locs = foldr1 place_merge $ map (flip Place 0) locs
 
 data Position = Position {
 	pos_location :: Location,

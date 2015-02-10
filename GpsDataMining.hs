@@ -46,7 +46,7 @@ toEvent pos  =
 	let end = pos_date $ last pos in
 	return $ Event {
 		event_all_positions = pos,
-		event_place = foldr1 place_merge $ map (flip Place 0) locs,
+		event_place = place locs,
 		event_begin = begin,
 		event_end = end,
 		event_span = end `diffUTCTime` begin,
