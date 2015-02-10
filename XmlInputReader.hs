@@ -1,4 +1,4 @@
-module InputReader (getDebits , getPositions) where
+module XmlInputReader (getDebits , getPositions) where
 
 import System.Locale
 import Data.Maybe
@@ -16,17 +16,25 @@ insertion_sort = foldr insert []
 {- Functions to treat the OFX format -}
 
 -- the second argument may be a couple of begin / end date
-getDebits :: String -> Maybe (UTCTime , UTCTime) -> [Transaction]
-getDebits input maybeBeginEnd =
-	let theFilter =
-		case maybeBeginEnd of
-		Nothing -> (\trn -> amount trn > 0)
-		Just (begin , end) -> (\trn -> amount trn > 0 && trn_date trn >= begin && trn_date trn <= end) in
+getDebits :: String -> Maybe UTCTime -> Maybe UTCTime -> [Transaction]
+getDebits input mbegin mend =
+	let all_debits =
+		filter ((> 0) . amount) $
+		getTransactionsInner input >>=
+		maybeToList . extractTrnDetails
+	in
+	let before_end =
+		case mend of
+		Nothing -> all_debits
+		Just end -> filter ((<= end) . trn_date) all_debits
+	in
+	let after_begin =
+		case mbegin of
+		Nothing -> before_end
+		Just begin -> filter ((>= begin) . trn_date) before_end
+	in
 	-- we reverse before sorting because the list will be nearly sorted then
-	insertion_sort . reverse .
-	filter theFilter $
-	getTransactionsInner input >>=
-	maybeToList . extractTrnDetails
+	insertion_sort $ reverse after_begin
 
 getTransactionsInner :: String -> [String]
 getTransactionsInner = between_separators "<STMTTRN>" "</STMTTRN>"
@@ -62,20 +70,15 @@ name_amount_date (_ : tl) = name_amount_date tl
 {- Functions to treat the KML format -}
 
 -- the second argument may be a couple of begin / end date
-getPositions :: String -> Maybe (UTCTime , UTCTime) -> [Position]
-getPositions input maybeBeginEnd =
+getPositions :: String -> Maybe UTCTime -> Maybe UTCTime -> [Position]
+getPositions input =
 	let contents = to_nodes_and_texts input in
 	let (dates , coords) = dates_coords contents in
-	let track =
+	filter_track $
 		zipWith (\date coord ->
 			let longitude : latitude : _ = splitOn " " coord in
 			Position (location (read latitude) (read longitude)) (readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
-		) dates coords in
-	reverse $ case maybeBeginEnd of
-	Nothing -> track
-	Just (begin , end) ->
-		takeWhile ((>= begin) . pos_date) $
-		dropWhile ((> end) . pos_date) track
+		) dates coords
 
 dates_coords [] = ([], [])
 dates_coords ("when"     : date  : tl) = let (dates , coords) = dates_coords tl in (date : dates , coords)

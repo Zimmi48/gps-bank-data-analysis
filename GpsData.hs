@@ -14,7 +14,8 @@ module GpsData (
 	sameLocation,
 	diameter,
 	totalDistance,
-	timeSpan
+	timeSpan,
+	filter_track
 ) where
 
 import Data.List
@@ -113,3 +114,18 @@ places_merge_once [] = []
 places_merge_once (hd : tl) =
 	let (here , elsewhere) = partition (place_intersect hd) (places_merge_once tl) in
 	foldr place_merge hd here : elsewhere
+
+{- Some code that is common to XmlInputReader and JsonInputReader -}
+filter_track track mbegin mend =
+	let before_end =
+		case mend of
+		Nothing -> track
+		Just end -> dropWhile ((> end) . pos_date) track
+	in
+	let after_begin =
+		case mbegin of
+		Nothing -> before_end
+		Just begin -> takeWhile ((>= begin) . pos_date) before_end
+	in
+	reverse after_begin		
+

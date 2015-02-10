@@ -1,4 +1,4 @@
-module GpsDataMining (getGpsEvents , getAllPlaces , placeFrequency , isFixed , event_diameter, event_place , shortDistance) where
+module GpsDataMining (getGpsEvents , getAllPlaces , placeFrequency , isFixed , event_diameter, event_place) where
 
 import Data.List
 import Data.Maybe
@@ -9,17 +9,17 @@ import Sublist
 
 {- GPS data mining -}
 
-shortTime = 300
-shortDistance = 40 -- depends on the accuracy of gps data
-
 -- looks like this way of merging places is too large and almost everything end up in the same place
 getAllPlaces = places_merge . map event_place
 
 placeFrequency places events = map (\pl -> length . filter (contains pl . event_place) $ events) places
 
-getGpsEvents :: [Position] -> [Event]
+getGpsEvents :: Double -> NominalDiffTime -> [Position] -> [Event]
 -- doing the merge or not does not seem to have a high impact on the number of distinct places
-getGpsEvents = map (foldr1 event_merge) . groupBy (place_intersect `on` event_place) . unfoldr nextEvent
+getGpsEvents minimalDiameter minimalDuration =
+	map (foldr1 $ event_merge minimalDiameter) .
+	groupBy (place_intersect `on` event_place) .
+	unfoldr (nextEvent minimalDiameter minimalDuration)
 
 data Event = Event {
 	event_all_positions :: [Position],
@@ -38,60 +38,60 @@ instance Show Event where
 
 event_diameter = place_diameter . event_place
 	
-toEvent :: [Position] -> Maybe Event
-toEvent [] = Nothing
-toEvent pos  =
+toEvent :: Double -> [Position] -> Maybe Event
+toEvent _ [] = Nothing
+toEvent minimalDiameter pos =
 	let locs = map pos_location pos in
 	let begin = pos_date $ head pos in
 	let end = pos_date $ last pos in
 	return $ Event {
 		event_all_positions = pos,
-		event_place = place locs shortDistance,
+		event_place = place locs minimalDiameter,
 		event_begin = begin,
 		event_end = end,
 		event_span = end `diffUTCTime` begin,
 		event_totalDistance = totalDistance locs
 	}
 
-isFixed :: Event -> Bool
-isFixed = (==shortDistance) . event_diameter
+isFixed :: Double -> Event -> Bool
+isFixed minimalDiameter = (==minimalDiameter) . event_diameter
 
 -- This is quite a strange way of merging successive events because the
 -- positions that separated the successive events are completely lost...
 -- But we can argue that they were probably unacurrate.
-event_merge :: Event -> Event -> Event
-event_merge e = fromMaybe e . toEvent . on (++) event_all_positions e
+event_merge :: Double -> Event -> Event -> Event
+event_merge minimalDiameter e = fromMaybe e . toEvent minimalDiameter . on (++) event_all_positions e
 
 -- nextEvent returns the next event (merging the successive 5 minutes events)
 -- and the rest of the list minus the head
 -- (because there must be a hole between events)
-nextEvent :: [Position] -> Maybe (Event , [Position])
-nextEvent [] = Nothing
-nextEvent input =
+nextEvent :: Double -> NominalDiffTime -> [Position] -> Maybe (Event , [Position])
+nextEvent _ _ [] = Nothing
+nextEvent minimalDiameter minimalDuration input =
 	let nextShortEvent l =
-		let sublist = nextShortTime l in
-		if (isEvent $ sPrefix sublist l) then sublist else 0
+		let sublist = nextShortTime minimalDuration l in
+		if (isEvent minimalDiameter $ sPrefix sublist l) then sublist else 0
 	in
 	case sTakeSublistsWhile nextShortEvent $ fromList input of
-	0 -> nextEvent (tail input)
+	0 -> nextEvent minimalDiameter minimalDuration (tail input)
 	nextEventSize ->
 		let (event_pos , remaining) = splitAt nextEventSize input in
 		do
-			e <- toEvent event_pos
+			e <- toEvent minimalDiameter event_pos
 			return (e , drop 1 remaining)
 
 -- nextShortTime returns a prefix size of Positions spanning at least the 5 next minutes
-nextShortTime :: Sublist Position -> Int
-nextShortTime l =
+nextShortTime :: NominalDiffTime -> Sublist Position -> Int
+nextShortTime minimalDuration l =
 	if sEmpty l then 0 else
 	let begin = pos_date $ sHead l in
-	sTakeUntil (\last -> pos_date last `diffUTCTime` begin >= shortTime) l
+	sTakeUntil (\last -> pos_date last `diffUTCTime` begin >= minimalDuration) l
 
-isEvent sl =
+isEvent minimalDiameter sl =
 	let pos = toList sl in
 	let loc = map pos_location pos in
 	let tot_dist = totalDistance loc in
 	let duration = timeSpan pos in
-	diameter loc <= max shortDistance (tot_dist * 120 / duration) &&
+	diameter loc <= max minimalDiameter (tot_dist * 120 / duration) &&
 	-- speed limitation
 	tot_dist <= 2*duration

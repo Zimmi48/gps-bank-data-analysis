@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-module GpsDataReader (getJSONPositions) where
+module JsonInputReader (getJSONPositions) where
 
 import System.Locale
 import Data.List
@@ -10,26 +10,19 @@ import GpsData
 {- Functions to treat the JSON GPS data -}
 -- JSON data is less cool to read but it contains information about accuracy
 
-getJSONPositions :: String -> Double -> Maybe (UTCTime , UTCTime) -> [Position]
+getJSONPositions :: String -> Double -> Maybe UTCTime -> Maybe UTCTime -> [Position]
 -- the input data is already sorted
-getJSONPositions input min_accuracy maybeBeginEnd =
-	let track = do
+getJSONPositions input min_accuracy =
+	filter_track $ do
 		point <- getPoints input
 		let tMs = timestampMs point
 		let t = take (length tMs - 3) tMs
-		if accuracy point <= min_accuracy then
-			return $ Position
+		let pos = return $ Position
 				(location
 					(normalizeE7 $ latitudeE7 point)
 					(normalizeE7 $ longitudeE7 point))
 				(readTime defaultTimeLocale "%s" t)
-		else []
-	in
-	reverse $ case maybeBeginEnd of
-	Nothing -> track
-	Just (begin , end) ->
-		takeWhile ((>= begin) . pos_date) $
-		dropWhile ((> end) . pos_date) track
+		if accuracy point <= min_accuracy then pos else []
 
 data JSONPoint = JSONPoint {
 	timestampMs :: String,

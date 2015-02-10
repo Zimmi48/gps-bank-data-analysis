@@ -1,4 +1,5 @@
 import System.IO
+import System.Console.GetOpt
 import System.Environment
 import System.Exit
 import System.Locale
@@ -9,38 +10,131 @@ import Data.Maybe
 import Text.Printf
 import BankData
 import GpsData
-import InputReader
-import GpsDataReader
+import XmlInputReader
+import JsonInputReader
 import GpsDataMining
 
+data Flag = Help | Duration Int | Accuracy Double | Json | Kml | Begin UTCTime | End UTCTime deriving Eq
+duration (Duration d) = Just d
+duration _ = Nothing
+accuracy (Accuracy a) = Just a
+accuracy _ = Nothing
+begin (Begin d) = Just d
+begin _ = Nothing
+end (End d) = Just d
+end _ = Nothing
+
+options = [
+	Option
+		['h']
+		["help"]
+		(NoArg Help) $
+		"Show this help message.\n",
+	Option
+		['d']
+		["duration"]
+		(ReqArg (Duration . read) "D") $
+		"Set the minimal duration of events in seconds (default 300).\n",
+	Option
+		['a']
+		["accuracy"]
+		(ReqArg (Accuracy . read) "A") $
+		"Set the minimal accuracy of GPS points in meters (default 40).\n" ++
+		"Should be used in combination with the JSON option.\n",
+	Option
+		['j']
+		["json"]
+		(NoArg Json) $
+		"Specify that the input GPS file will be in Google's JSON format.\n",
+	Option
+		['k']
+		["kml"]
+		(NoArg Kml) $
+		"Specify that the input GPS file will be in Google's KML format.\n" ++
+		"This is the default format so using this option is not required.\n",
+	Option
+		['b']
+		["begin"]
+		(ReqArg (Begin . readTime defaultTimeLocale "%Y-%m-%d") "\"YYYY-MM-DD\"") $
+		"Set the begin date for GPS and transaction data selection.\n",
+	Option
+		['e']
+		["end"]
+		(ReqArg (End . readTime defaultTimeLocale "%Y-%m-%d") "\"YYYY-MM-DD\"") $
+		"Set the end date for GPS and transaction data selection.\n"
+	]
+
+parseArgs = do
+	argv <- getArgs
+	name <- getProgName
+	case parse argv of
+		([]   , [gps,bank] , []) -> return ([] , gps , bank)
+		(opts , [gps,bank] , []) ->
+			if Help `elem` opts then
+				help name
+			else if not $ Json `elem` opts || all ((==Nothing) . accuracy) opts then
+				die name ["Error: option accuracy should be used in combination with the JSON option.\n"]
+			else if Json `elem` opts && Kml `elem` opts then
+				die name ["Error: option KML and JSON are incompatible.\n"]
+			else
+				return (opts , gps , bank)
+		( _ , [gps,bank] , errs) -> die name (errs)
+		(opts , _ , _) ->
+			if Help `elem` opts then
+				help name
+			else
+				die name ["Error: not the right number of arguments.\n"]
+	where
+		parse argv    = getOpt Permute options argv
+		header name   = "Usage: " ++ name ++ " [options] gps_file bank_file.\n"
+		info name     = usageInfo (header name) options
+		dump          = hPutStrLn stderr
+		die name errs = dump (concat errs ++ info name) >> exitWith (ExitFailure 1)
+		help name     = dump (info name)                >> exitWith ExitSuccess
+
 main = do
-	args <- getArgs
-	case args of
-		[bank_file , gps_file , begin , end] -> do
-			inp_bank <- openFile bank_file ReadMode
-			inp_gps <- openFile gps_file ReadMode
-			let beginDate = readTime defaultTimeLocale "%Y-%m-%d" begin
-			let endDate   = readTime defaultTimeLocale "%Y-%m-%d" end
-			bank <- hGetContents inp_bank
-			gps  <- hGetContents inp_gps
-			let debits = getDebits bank $ Just (beginDate , endDate)
-			let positions = getJSONPositions gps shortDistance $ Just (beginDate , endDate)
-			putStrLn $ "Between " ++ begin ++ " and " ++ end ++ ", you recorded:"
-			printf "%d positions.\n" $ length positions
-			
-			let events = getGpsEvents positions
-			printf "We found %d events.\n" $ length events
-			printf "Among these, %d are fixed.\n" (length . filter isFixed $ events)
-			let nonfixed_events = filter (not . isFixed) events
-			printf
-				"The others have an average diameter of %f meters.\n"
-				( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
-			let places = getAllPlaces events
-			printf "We identified %d distinct locations.\n" $ length places
-			print . dropWhile ((<10) . fst) . sortBy (compare `on` fst) $ zip (placeFrequency places events) places
-			
-			--putStr $ show (length debits) ++ " transactions at "
-			--putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."
+	(opts, gps_file, bank_file) <- parseArgs
+	
+	inp_gps  <- openFile gps_file  ReadMode
+	inp_bank <- openFile bank_file ReadMode
+	
+	gps  <- hGetContents inp_gps
+	bank <- hGetContents inp_bank
+	
+	let mbegin = listToMaybe $ mapMaybe begin opts
+	let mend   = listToMaybe $ mapMaybe end   opts
+	
+	let minimalDiameter = fromMaybe 40  . listToMaybe $ mapMaybe accuracy opts
+	let minimalDuration =
+		fromIntegral . fromMaybe 300 . listToMaybe $ mapMaybe duration opts :: NominalDiffTime
+	
+	let positions =
+		if Json `elem` opts then
+			getJSONPositions gps minimalDiameter mbegin mend
+		else
+			getPositions gps mbegin mend
+	let events = getGpsEvents minimalDiameter minimalDuration positions
+	let debits = getDebits bank mbegin mend
+
+	let begin = fromMaybe (pos_date $ head positions) mbegin
+	let end   = fromMaybe (pos_date $ last positions) mend
+	
+	putStrLn $ "Between " ++ show begin ++ " and " ++ show end ++ ", you recorded:"
+	printf "%d positions and\n" $ length positions
+	
+	putStr $ show (length debits) ++ " transactions at "
+	putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."
+	
+	printf "We found %d events.\n" $ length events
+	printf "Among these, %d are fixed.\n" (length . filter (isFixed minimalDiameter) $ events)
+	let nonfixed_events = filter (not . isFixed minimalDiameter) events
+	printf
+		"The others have an average diameter of %f meters.\n"
+		( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
+	let places = getAllPlaces events
+	printf "We identified %d distinct locations.\n" $ length places
+	--print . dropWhile ((<10) . fst) . sortBy (compare `on` fst) $ zip (placeFrequency places events) places
+	
 			--print $ nub $ map name debits
 			
 			-- time between two positions
@@ -58,9 +152,5 @@ main = do
 			--putStrLn . show . take 3 . reverse $ sortBy (compare `on` amount) debits
 			
 			--putStrLn . show $ head positions
-			
-			hClose inp_bank
-			hClose inp_gps
-		_ -> do
-			putStrLn "Incorrect number of arguments!"
-			exitWith (ExitFailure 1)
+	hClose inp_bank
+	hClose inp_gps
