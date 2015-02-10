@@ -80,9 +80,7 @@ diameter [_] = 0
 diameter (hd : tl) = foldr (\pos tmpMax -> max tmpMax $ loc_distance hd pos) (diameter tl) tl
 
 loc_totalDistance :: [Location] -> Double
-loc_totalDistance [] = 0
-loc_totalDistance [_] = 0
-loc_totalDistance (hd1 : hd2 : tl) = loc_totalDistance (hd2 : tl) + loc_distance hd1 hd2
+loc_totalDistance = totalDistance
 
 {- Functions on lists of positions -}
 
