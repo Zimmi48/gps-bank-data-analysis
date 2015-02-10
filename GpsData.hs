@@ -40,7 +40,7 @@ instance Show Place
 		"," ++
 		show (pntLon c) ++
 		")}"
-place locs = foldr1 place_merge $ map (\c -> Place c 10 [c]) locs
+place locs min_accuracy = foldr1 place_merge $ map (\c -> Place c min_accuracy [c]) locs
 
 data Position = Position {
 	pos_location :: Location,

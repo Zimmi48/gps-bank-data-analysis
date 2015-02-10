@@ -1,4 +1,4 @@
-module GpsDataMining (getGpsEvents , getAllPlaces , placeFrequency , isFixed , event_diameter, event_place) where
+module GpsDataMining (getGpsEvents , getAllPlaces , placeFrequency , isFixed , event_diameter, event_place , shortDistance) where
 
 import Data.List
 import Data.Maybe
@@ -10,7 +10,7 @@ import Sublist
 {- GPS data mining -}
 
 shortTime = 300
-shortDistance = 100 -- depends on the accuracy of gps data
+shortDistance = 40 -- depends on the accuracy of gps data
 
 -- looks like this way of merging places is too large and almost everything end up in the same place
 getAllPlaces = places_merge . map event_place
@@ -46,7 +46,7 @@ toEvent pos  =
 	let end = pos_date $ last pos in
 	return $ Event {
 		event_all_positions = pos,
-		event_place = place locs,
+		event_place = place locs shortDistance,
 		event_begin = begin,
 		event_end = end,
 		event_span = end `diffUTCTime` begin,
@@ -54,7 +54,7 @@ toEvent pos  =
 	}
 
 isFixed :: Event -> Bool
-isFixed = (==10) . event_diameter
+isFixed = (==shortDistance) . event_diameter
 
 -- This is quite a strange way of merging successive events because the
 -- positions that separated the successive events are completely lost...

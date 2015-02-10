@@ -74,7 +74,7 @@ getPositions input maybeBeginEnd =
 	reverse $ case maybeBeginEnd of
 	Nothing -> track
 	Just (begin , end) ->
-		takeWhile((>= begin) . pos_date) $
+		takeWhile ((>= begin) . pos_date) $
 		dropWhile ((> end) . pos_date) track
 
 dates_coords [] = ([], [])

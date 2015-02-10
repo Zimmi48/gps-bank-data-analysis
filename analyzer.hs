@@ -10,6 +10,7 @@ import Text.Printf
 import BankData
 import GpsData
 import InputReader
+import GpsDataReader
 import GpsDataMining
 
 main = do
@@ -18,14 +19,15 @@ main = do
 		[bank_file , gps_file , begin , end] -> do
 			inp_bank <- openFile bank_file ReadMode
 			inp_gps <- openFile gps_file ReadMode
-			let beginDate = readTime defaultTimeLocale "%Y-%m-%d %H:%M:%S" begin
-			let endDate   = readTime defaultTimeLocale "%Y-%m-%d %H:%M:%S" end
+			let beginDate = readTime defaultTimeLocale "%Y-%m-%d" begin
+			let endDate   = readTime defaultTimeLocale "%Y-%m-%d" end
 			bank <- hGetContents inp_bank
 			gps  <- hGetContents inp_gps
 			let debits = getDebits bank $ Just (beginDate , endDate)
-			let positions = getPositions gps $ Just (beginDate , endDate)
+			let positions = getJSONPositions gps shortDistance $ Just (beginDate , endDate)
 			putStrLn $ "Between " ++ begin ++ " and " ++ end ++ ", you recorded:"
 			printf "%d positions.\n" $ length positions
+			
 			let events = getGpsEvents positions
 			printf "We found %d events.\n" $ length events
 			printf "Among these, %d are fixed.\n" (length . filter isFixed $ events)
