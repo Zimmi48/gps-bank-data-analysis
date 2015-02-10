@@ -1,4 +1,4 @@
-module GpsDataMining (getGpsEvents , getAllPlaces , placeFrequency , isFixed , event_diameter) where
+module GpsDataMining (getGpsEvents , getAllPlaces , placeFrequency , isFixed , event_diameter, event_place) where
 
 import Data.List
 import Data.Maybe
@@ -90,4 +90,8 @@ nextShortTime l =
 isEvent sl =
 	let pos = toList sl in
 	let loc = map pos_location pos in
-	diameter loc <= max shortDistance (totalDistance loc * 120 / timeSpan pos)
+	let tot_dist = totalDistance loc in
+	let duration = timeSpan pos in
+	diameter loc <= max shortDistance (tot_dist * 120 / duration) &&
+	-- speed limitation
+	tot_dist <= 2*duration
