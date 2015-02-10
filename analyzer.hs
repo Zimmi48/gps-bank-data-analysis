@@ -35,8 +35,7 @@ main = do
 				( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
 			let places = getAllPlaces events
 			printf "We identified %d distinct locations.\n" $ length places
-			print $ placeFrequency places events
-			print places
+			print . sort $ zip ((map place_diameter) places) (placeFrequency places events)
 			
 			--putStr $ show (length debits) ++ " transactions at "
 			--putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."
