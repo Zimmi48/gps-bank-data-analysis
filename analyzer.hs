@@ -3,7 +3,7 @@ import System.Environment
 import System.Exit
 import System.Locale
 import Data.Time
---import Data.Function
+import Data.Function
 import Data.List
 import Data.Maybe
 import Text.Printf
@@ -35,7 +35,7 @@ main = do
 				( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
 			let places = getAllPlaces events
 			printf "We identified %d distinct locations.\n" $ length places
-			print . sort $ zip ((map place_diameter) places) (placeFrequency places events)
+			print . dropWhile ((<10) . fst) . sortBy (compare `on` fst) $ zip (placeFrequency places events) places
 			
 			--putStr $ show (length debits) ++ " transactions at "
 			--putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."

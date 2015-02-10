@@ -29,7 +29,17 @@ data Place = Place {
 	place_center :: Location,
 	place_diameter :: Double,
 	place_locs :: [Location]
-} deriving (Show, Eq)
+} deriving (Eq)
+instance Show Place
+	where show pl =
+		let c = place_center pl in
+		"{diameter = " ++
+		show (place_diameter pl) ++
+		", center = (" ++
+		show (pntLat c) ++
+		"," ++
+		show (pntLon c) ++
+		")}"
 place locs = foldr1 place_merge $ map (\c -> Place c 10 [c]) locs
 
 data Position = Position {
