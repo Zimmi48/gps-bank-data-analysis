@@ -4,7 +4,6 @@ module GpsData (
 	Place(Place),
 	pos_location,
 	pos_date,
-	loc_distance,
 	place_diameter,
 	place_intersect,
 	contains,
@@ -12,7 +11,7 @@ module GpsData (
 	places_merge,
 	sameLocation,
 	diameter,
-	loc_totalDistance,
+	totalDistance,
 	timeSpan
 ) where
 
@@ -40,15 +39,12 @@ instance Ord Position
 		r -> r
 -- positions are ordered first by date then by latitude and longitude
 
-loc_distance :: Location -> Location -> Double
-loc_distance = distance
-
 sameLocation :: Location -> Location -> Bool
 sameLocation l1 l2 =
 	pntLat l1 == pntLat l2 &&
 	pntLon l1 == pntLon l2
 
-place_centers_distance = loc_distance `on` place_center
+place_centers_distance = distance `on` place_center
 
 contains :: Place -> Place -> Bool
 p1 `contains` p2 = 2 * place_centers_distance p1 p2 <= place_diameter p1 - place_diameter p2
@@ -74,10 +70,7 @@ place_merge p1 p2 =
 diameter :: [Location] -> Double
 diameter [] = 0
 diameter [_] = 0
-diameter (hd : tl) = foldr (\pos tmpMax -> max tmpMax $ loc_distance hd pos) (diameter tl) tl
-
-loc_totalDistance :: [Location] -> Double
-loc_totalDistance = totalDistance
+diameter (hd : tl) = foldr (\pos tmpMax -> max tmpMax $ distance hd pos) (diameter tl) tl
 
 {- Functions on lists of positions -}
 

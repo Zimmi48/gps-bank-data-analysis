@@ -50,7 +50,7 @@ toEvent pos  =
 		event_begin = begin,
 		event_end = end,
 		event_span = end `diffUTCTime` begin,
-		event_totalDistance = loc_totalDistance locs
+		event_totalDistance = totalDistance locs
 	}
 
 isFixed :: Event -> Bool
@@ -90,4 +90,4 @@ nextShortTime l =
 isEvent sl =
 	let pos = toList sl in
 	let loc = map pos_location pos in
-	diameter loc <= max shortDistance (loc_totalDistance loc * 120 / timeSpan pos)
+	diameter loc <= max shortDistance (totalDistance loc * 120 / timeSpan pos)
