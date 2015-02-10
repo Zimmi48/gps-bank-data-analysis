@@ -48,9 +48,6 @@ sameLocation l1 l2 =
 	pntLat l1 == pntLat l2 &&
 	pntLon l1 == pntLon l2
 
-loc_interpolate :: Location -> Location -> Double -> Location
-loc_interpolate l1 l2 w = interpolate l1 l2 w
-
 place_centers_distance = loc_distance `on` place_center
 
 contains :: Place -> Place -> Bool
@@ -67,7 +64,7 @@ place_merge p1 p2 =
 		let dist = place_centers_distance p1 p2 in
 		let new_diameter = dist + (place_diameter p1 + place_diameter p2) / 2 in
 		Place
-			(loc_interpolate (place_center p1) (place_center p2) $
+			(interpolate (place_center p1) (place_center p2) $
 				1/2 + (place_diameter p2 - place_diameter p1) / (4 * dist)
 			) new_diameter
 
