@@ -54,7 +54,7 @@ toEvent pos  =
 	}
 
 isFixed :: Event -> Bool
-isFixed = (==0) . event_diameter
+isFixed = (==10) . event_diameter
 
 -- This is quite a strange way of merging successive events because the
 -- positions that separated the successive events are completely lost...

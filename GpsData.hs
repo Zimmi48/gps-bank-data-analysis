@@ -30,7 +30,7 @@ data Place = Place {
 	place_diameter :: Double,
 	place_locs :: [Location]
 } deriving (Show, Eq)
-place locs = foldr1 place_merge $ map (\c -> Place c 0 [c]) locs
+place locs = foldr1 place_merge $ map (\c -> Place c 10 [c]) locs
 
 data Position = Position {
 	pos_location :: Location,
@@ -49,7 +49,7 @@ sameLocation l1 l2 =
 	pntLon l1 == pntLon l2
 
 inside :: Location -> Place -> Bool
-loc `inside` pl  = distance loc (place_center pl) <= place_diameter pl
+loc `inside` pl  = 2 * distance loc (place_center pl) <= place_diameter pl
 
 contains :: Place -> Place -> Bool
 p1 `contains` p2 = all (`inside` p2) (place_locs p1)
@@ -88,9 +88,18 @@ timeSpan (hd : tl) = realToFrac $ pos_date (last tl) `diffUTCTime` pos_date hd
 
 {- Functions on list of places -}
 
--- we should probably repeat the operation until we reach a fixpoint
+-- repeat the operation until we reach a fixpoint
+-- in practice, we reach that fixpoint in one step most of the time
+-- so using this function can be a waste of computational ressources
 places_merge :: [Place] -> [Place]
-places_merge [] = []
-places_merge (hd : tl) =
-	let (here , elsewhere) = partition (place_intersect hd) (places_merge tl) in
+places_merge l =
+	let iters = iterate places_merge_once l in
+	let Just (True , pl) =
+		find fst $
+		zipWith (\x y -> (x == y , x)) iters $ drop 1 iters in
+	pl
+
+places_merge_once [] = []
+places_merge_once (hd : tl) =
+	let (here , elsewhere) = partition (place_intersect hd) (places_merge_once tl) in
 	foldr place_merge hd here : elsewhere
