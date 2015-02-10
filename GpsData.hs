@@ -1,6 +1,6 @@
 module GpsData (
 	Position(Position),
-	Location(Location),
+	location,
 	Place(Place),
 	pos_location,
 	pos_date,
@@ -21,10 +21,8 @@ import Data.Time
 import Data.Function
 import Geo.Computations
 
-data Location = Location {
-	loc_latitude :: Double,
-	loc_longitude :: Double
-} deriving (Show, Eq, Ord)
+type Location = Point
+location lat lon = pt lat lon Nothing Nothing
 
 data Place = Place {
 	place_center :: Location,
@@ -42,22 +40,16 @@ instance Ord Position
 		r -> r
 -- positions are ordered first by date then by latitude and longitude
 
-toPoint :: Location -> Point
-toPoint pos = pt (loc_latitude pos) (loc_longitude pos) Nothing Nothing
-
-fromPoint :: Point -> Location
-fromPoint pt = Location (pntLat pt) (pntLon pt)
-
 loc_distance :: Location -> Location -> Double
-loc_distance = distance `on` toPoint
+loc_distance = distance
 
 sameLocation :: Location -> Location -> Bool
 sameLocation l1 l2 =
-	loc_latitude l1 == loc_latitude l2 &&
-	loc_longitude l1 == loc_longitude l2
+	pntLat l1 == pntLat l2 &&
+	pntLon l1 == pntLon l2
 
 loc_interpolate :: Location -> Location -> Double -> Location
-loc_interpolate l1 l2 w = fromPoint $ interpolate (toPoint l1) (toPoint l2) w
+loc_interpolate l1 l2 w = interpolate l1 l2 w
 
 place_centers_distance = loc_distance `on` place_center
 

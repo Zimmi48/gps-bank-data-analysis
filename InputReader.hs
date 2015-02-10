@@ -69,7 +69,7 @@ getPositions input maybeBeginEnd =
 	let track =
 		zipWith (\date coord ->
 			let longitude : latitude : _ = splitOn " " coord in
-			Position (Location (read latitude) (read longitude)) (readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
+			Position (location (read latitude) (read longitude)) (readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
 		) dates coords in
 	reverse $ case maybeBeginEnd of
 	Nothing -> track
