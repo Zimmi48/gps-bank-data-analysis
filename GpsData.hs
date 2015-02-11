@@ -121,16 +121,7 @@ places_merge_once (hd : tl) =
 	foldr place_merge hd here : elsewhere
 
 {- Some code that is common to XmlInputReader and JsonInputReader -}
-filter_track track mbegin mend =
-	let before_end =
-		case mend of
-		Nothing -> track
-		Just end -> dropWhile ((> end) . utctDay . pos_date) track
-	in
-	let after_begin =
-		case mbegin of
-		Nothing -> before_end
-		Just begin -> takeWhile ((>= begin) . utctDay . pos_date) before_end
-	in
-	reverse after_begin		
+filter_track track begin end = reverse $
+	takeWhile ((>= begin) . utctDay . pos_date) $
+	dropWhile ((> end) . utctDay . pos_date) track
 

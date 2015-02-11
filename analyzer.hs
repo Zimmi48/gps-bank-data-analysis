@@ -104,21 +104,22 @@ main = do
 	let mbegin = listToMaybe $ mapMaybe begin opts
 	let mend   = listToMaybe $ mapMaybe end   opts
 	
+	let debits = getDebits bank mbegin mend
+	let begin = fromMaybe (trn_date $ head debits) mbegin
+	let end   = fromMaybe (trn_date $ last debits) mend
+	
 	let minimalDiameter =
 		fromIntegral . fromMaybe 40  . listToMaybe $ mapMaybe accuracy opts
 	let minimalDuration =
 		fromIntegral . fromMaybe 300 . listToMaybe $ mapMaybe duration opts
 	
+	-- using the first and last transaction to give bounds to GPS positions extractions
 	let positions =
 		if Json `elem` opts then
-			getJSONPositions gps minimalDiameter mbegin mend
+			getJSONPositions gps minimalDiameter begin end
 		else
-			getPositions gps mbegin mend
+			getPositions gps begin end
 	let (events , places) = getGpsEventsAndPlaces minimalDiameter minimalDuration positions
-	let debits = getDebits bank mbegin mend
-
-	let begin = fromMaybe (trn_date $ head debits) mbegin
-	let end   = fromMaybe (trn_date $ last debits) mend
 	
 	putStrLn $ "Between " ++ show begin ++ " and " ++ show end ++ ", you recorded:"
 	printf "%d positions and\n" $ length positions

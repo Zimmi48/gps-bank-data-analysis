@@ -10,7 +10,7 @@ import GpsData
 {- Functions to treat the JSON GPS data -}
 -- JSON data is less cool to read but it contains information about accuracy
 
-getJSONPositions :: String -> Double -> Maybe Day -> Maybe Day -> [Position]
+getJSONPositions :: String -> Double -> Day -> Day -> [Position]
 -- the input data is already sorted
 getJSONPositions input min_accuracy =
 	filter_track $ do

@@ -70,7 +70,7 @@ name_amount_date (_ : tl) = name_amount_date tl
 {- Functions to treat the KML format -}
 
 -- the second argument may be a couple of begin / end date
-getPositions :: String -> Maybe Day -> Maybe Day -> [Position]
+getPositions :: String -> Day -> Day -> [Position]
 getPositions input =
 	let contents = to_nodes_and_texts input in
 	let (dates , coords) = dates_coords contents in
