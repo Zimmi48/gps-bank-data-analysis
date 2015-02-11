@@ -14,6 +14,15 @@ getAllPlaces = places_merge . map event_place
 
 placeFrequency places events = map (\pl -> length . filter (contains pl . event_place) $ events) places
 
+normalizeEventPlace :: Event -> [Place] -> Maybe Event
+normalizeEventPlace e all_places =
+	let place = event_place e in
+	find (`contains` place) all_places >>=
+	\pl -> return $
+		Event
+			(event_all_positions e) pl
+			(event_begin e) (event_end e) (event_span e) (event_totalDistance e)
+
 getGpsEvents :: Double -> NominalDiffTime -> [Position] -> [Event]
 -- doing the merge or not does not seem to have a high impact on the number of distinct places
 getGpsEvents minimalDiameter minimalDuration =

@@ -1,0 +1,3 @@
+module CombinedDataMining () where
+
+getDays
