@@ -127,23 +127,23 @@ main = do
 	putStr $ show (length debits) ++ " transactions at "
 	putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."
 	
-	printf "We found %d events.\n" $ length events
-	printf "Among these, %d are fixed.\n" (length . filter (isFixed minimalDiameter) $ events)
+	--printf "We found %d events.\n" $ length events
+	--printf "Among these, %d are fixed.\n" (length . filter (isFixed minimalDiameter) $ events)
 	
 	let nonfixed_events = filter (not . isFixed minimalDiameter) events
-	printf
-		"The others have an average diameter of %f meters.\n"
-		( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
+	--printf
+	--	"The others have an average diameter of %f meters.\n"
+	--	( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
 	printf "We identified %d distinct locations.\n" $ length places
 	
 	-- Various info
 	
 	-- Print 10 transactions
-	print $ take 10 debits
+	--print $ take 10 debits
 	
 	-- All distinct vendor names
-	--print $ nub $ map name debits
-			
+	print $ nub $ map name debits
+	
 	-- Show the three biggest spending
 	--putStrLn . show . take 3 . reverse $ sortBy (compare `on` amount) debits
 	
