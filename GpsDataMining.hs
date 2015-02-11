@@ -26,8 +26,9 @@ normalizeEventPlace e all_places =
 getGpsEvents :: Double -> NominalDiffTime -> [Position] -> [Event]
 -- doing the merge or not does not seem to have a high impact on the number of distinct places
 getGpsEvents minimalDiameter minimalDuration =
-	map (foldr1 $ event_merge minimalDiameter) .
-	groupBy (place_intersect `on` event_place) .
+	mapMaybe (toEvent minimalDiameter) .
+	--map (foldr1 $ event_merge minimalDiameter) .
+	--groupBy (place_intersect `on` event_place) .
 	unfoldr (nextEvent minimalDiameter minimalDuration)
 
 data Event = Event {
@@ -65,16 +66,10 @@ toEvent minimalDiameter pos =
 isFixed :: Double -> Event -> Bool
 isFixed minimalDiameter = (==minimalDiameter) . event_diameter
 
--- This is quite a strange way of merging successive events because the
--- positions that separated the successive events are completely lost...
--- But we can argue that they were probably unacurrate.
-event_merge :: Double -> Event -> Event -> Event
-event_merge minimalDiameter e = fromMaybe e . toEvent minimalDiameter . on (++) event_all_positions e
-
 -- nextEvent returns the next event (merging the successive 5 minutes events)
 -- and the rest of the list minus the head
 -- (because there must be a hole between events)
-nextEvent :: Double -> NominalDiffTime -> [Position] -> Maybe (Event , [Position])
+nextEvent :: Double -> NominalDiffTime -> [Position] -> Maybe ([Position] , [Position])
 nextEvent _ _ [] = Nothing
 nextEvent minimalDiameter minimalDuration input =
 	let nextShortEvent l =
@@ -85,9 +80,7 @@ nextEvent minimalDiameter minimalDuration input =
 	0 -> nextEvent minimalDiameter minimalDuration (tail input)
 	nextEventSize ->
 		let (event_pos , remaining) = splitAt nextEventSize input in
-		do
-			e <- toEvent minimalDiameter event_pos
-			return (e , drop 1 remaining)
+		return (event_pos , drop 1 remaining)
 
 -- nextShortTime returns a prefix size of Positions spanning at least the 5 next minutes
 nextShortTime :: NominalDiffTime -> Sublist Position -> Int
