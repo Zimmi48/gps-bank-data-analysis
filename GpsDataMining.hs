@@ -1,4 +1,4 @@
-module GpsDataMining (getGpsEventsAndPlaces , placeFrequency , isFixed , event_diameter, event_place) where
+module GpsDataMining (getGpsEventsAndPlaces , placeFrequency) where
 
 import Data.List
 import Data.Maybe
@@ -40,39 +40,6 @@ getGpsEventsAndPlaces minimalDiameter minimalDuration track =
 		zip raw_events indexes
 	in
 	(merged_events , map fst places)
-
-data Event = Event {
-	event_place :: Place,
-	event_begin :: UTCTime,
-	event_end :: UTCTime,
-	event_span :: NominalDiffTime,
-	event_totalDistance :: Double
-}
-instance Show Event where
-	show e =
-		"Event { begin = " ++ show (event_begin e) ++
-		", end = " ++ show (event_end e) ++
-		", totalDistance = " ++ show (event_totalDistance e) ++
-		", diameter = " ++ show (event_diameter e) ++ " }"
-
-event_diameter = place_diameter . event_place
-	
-toEvent :: Double -> [Position] -> Maybe Event
-toEvent _ [] = Nothing
-toEvent minimalDiameter pos =
-	let locs = map pos_location pos in
-	let begin = pos_date $ head pos in
-	let end = pos_date $ last pos in
-	return $ Event {
-		event_place = place locs minimalDiameter,
-		event_begin = begin,
-		event_end = end,
-		event_span = end `diffUTCTime` begin,
-		event_totalDistance = totalDistance locs
-	}
-
-isFixed :: Double -> Event -> Bool
-isFixed minimalDiameter = (==minimalDiameter) . event_diameter
 
 -- nextEvent returns the next event (merging the successive 5 minutes events)
 -- and the rest of the list minus the head

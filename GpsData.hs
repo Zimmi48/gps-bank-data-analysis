@@ -7,6 +7,13 @@ module GpsData (
 	Place,
 	place,
 	place_diameter,
+	Event,
+	toEvent,
+	event_place,
+	event_begin,
+	event_end,
+	event_diameter,
+	isFixed,
 	inside,
 	any_pos_in_place,
 	place_intersect,
@@ -61,14 +68,38 @@ sameLocation l1 l2 =
 	pntLat l1 == pntLat l2 &&
 	pntLon l1 == pntLon l2
 
+data Event = Event {
+	event_place :: Place,
+	event_begin :: UTCTime,
+	event_end :: UTCTime
+}
+instance Show Event where
+	show e =
+		"Event { from " ++ show (event_begin e) ++
+		" to " ++ show (event_end e) ++
+		" at " ++ show (event_place e) ++ " }"
+
+event_diameter = place_diameter . event_place
+
+toEvent :: Double -> [Position] -> Maybe Event
+toEvent _ [] = Nothing
+toEvent minimalDiameter pos =
+	return $ Event {
+		event_place = place (map pos_location pos) minimalDiameter,
+		event_begin = pos_date $ head pos,
+		event_end = pos_date $ last pos
+	}
+
+isFixed :: Double -> Event -> Bool
+isFixed minimalDiameter = (==minimalDiameter) . event_diameter
+
+{- Various functions on location and place -}
+
 inside :: Location -> Place -> Bool
 loc `inside` pl  = 2 * distance loc (place_center pl) <= place_diameter pl
 
 contains :: Place -> Place -> Bool
 p1 `contains` p2 = all (`inside` p2) (place_locs p1)
-
-any_pos_in_place :: [Location] -> Place -> Bool
-any_pos_in_place pos pl = any (`inside` pl) pos
 
 place_intersect :: Place -> Place -> Bool
 place_intersect p1 p2 =
@@ -94,6 +125,9 @@ diameter :: [Location] -> Double
 diameter [] = 0
 diameter [_] = 0
 diameter (hd : tl) = foldr (\pos tmpMax -> max tmpMax $ distance hd pos) (diameter tl) tl
+
+any_pos_in_place :: [Location] -> Place -> Bool
+any_pos_in_place pos pl = any (`inside` pl) pos
 
 {- Functions on lists of positions -}
 
@@ -121,6 +155,7 @@ places_merge_once (hd : tl) =
 	foldr place_merge hd here : elsewhere
 
 {- Some code that is common to XmlInputReader and JsonInputReader -}
+
 filter_track track begin end = reverse $
 	takeWhile ((>= begin) . utctDay . pos_date) $
 	dropWhile ((> end) . utctDay . pos_date) track
