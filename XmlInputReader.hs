@@ -5,6 +5,8 @@ import Data.Maybe
 import Data.List
 import Data.List.Split
 import Data.Time
+import Data.Char
+import Data.Function
 import BankData
 import GpsData
 
@@ -62,10 +64,29 @@ to_nodes_and_texts :: String -> [String]
 to_nodes_and_texts = splitOneOf "<>"
 
 name_amount_date [] = (Nothing , Nothing , Nothing)
-name_amount_date ("NAME"   : name   : tl) = let (Nothing , amount , date) = name_amount_date tl in (Just name , amount , date)
+name_amount_date ("NAME"   : name   : tl) = let (Nothing , amount , date) = name_amount_date tl in (Just $ clean name , amount , date)
 name_amount_date ("TRNAMT" : amount : tl) = let (name , Nothing, date) = name_amount_date tl in (name , Just amount , date)
 name_amount_date ("DTPOSTED" : date : tl) = let (name , amount , Nothing) = name_amount_date tl in (name , amount , Just date)
 name_amount_date (_ : tl) = name_amount_date tl
+
+clean name = unwords $ remove_repeating $ words name >>= \w ->
+	if length w <= 2 && all isAlphaNum w then
+		-- short words are too impredictable to be safely removed
+		return w
+	else if (head w == '&') then
+		-- probably an unfiltered XML entity
+		[]
+	else
+		groupBy ((&&) `on` isAlpha) w >>= \w -> case w of
+		[] -> []
+		-- only one letter in the middle of digits is rarely informative
+		[_] -> []
+		alpha -> return alpha
+
+remove_repeating [] = []
+remove_repeating (hd : tl) =
+	let following = remove_repeating tl in
+	if any (isPrefixOf hd) tl then following else (hd : following)
 
 {- Functions to treat the KML format -}
 
