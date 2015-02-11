@@ -16,7 +16,7 @@ insertion_sort = foldr insert []
 {- Functions to treat the OFX format -}
 
 -- the second argument may be a couple of begin / end date
-getDebits :: String -> Maybe UTCTime -> Maybe UTCTime -> [Transaction]
+getDebits :: String -> Maybe Day -> Maybe Day -> [Transaction]
 getDebits input mbegin mend =
 	let all_debits =
 		filter ((> 0) . amount) $
@@ -26,7 +26,7 @@ getDebits input mbegin mend =
 	let before_end =
 		case mend of
 		Nothing -> all_debits
-		Just end -> filter ((< end) . trn_date) all_debits
+		Just end -> filter ((<= end) . trn_date) all_debits
 	in
 	let after_begin =
 		case mbegin of
@@ -70,7 +70,7 @@ name_amount_date (_ : tl) = name_amount_date tl
 {- Functions to treat the KML format -}
 
 -- the second argument may be a couple of begin / end date
-getPositions :: String -> Maybe UTCTime -> Maybe UTCTime -> [Position]
+getPositions :: String -> Maybe Day -> Maybe Day -> [Position]
 getPositions input =
 	let contents = to_nodes_and_texts input in
 	let (dates , coords) = dates_coords contents in

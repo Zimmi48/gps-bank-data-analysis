@@ -125,12 +125,12 @@ filter_track track mbegin mend =
 	let before_end =
 		case mend of
 		Nothing -> track
-		Just end -> dropWhile ((> end) . pos_date) track
+		Just end -> dropWhile ((> end) . utctDay . pos_date) track
 	in
 	let after_begin =
 		case mbegin of
 		Nothing -> before_end
-		Just begin -> takeWhile ((>= begin) . pos_date) before_end
+		Just begin -> takeWhile ((>= begin) . utctDay . pos_date) before_end
 	in
 	reverse after_begin		
 

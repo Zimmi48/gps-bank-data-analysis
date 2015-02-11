@@ -14,7 +14,7 @@ import XmlInputReader
 import JsonInputReader
 import GpsDataMining
 
-data Flag = Help | Duration Int | Accuracy Int | Json | Kml | Begin UTCTime | End UTCTime deriving Eq
+data Flag = Help | Duration Int | Accuracy Int | Json | Kml | Begin Day | End Day deriving Eq
 duration (Duration d) = Just d
 duration _ = Nothing
 accuracy (Accuracy a) = Just a
@@ -56,12 +56,12 @@ options = [
 		['b']
 		["begin"]
 		(ReqArg (Begin . readTime defaultTimeLocale "%Y-%m-%d") "\"YYYY-MM-DD\"") $
-		"Set the begin date for GPS and transaction data selection.\n",
+		"Set the begin date for GPS and transaction data selection (bounds included).\n",
 	Option
 		['e']
 		["end"]
 		(ReqArg (End . readTime defaultTimeLocale "%Y-%m-%d") "\"YYYY-MM-DD\"") $
-		"Set the end date for GPS and transaction data selection.\n"
+		"Set the end date for GPS and transaction data selection (bounds included).\n"
 	]
 
 parseArgs = do
@@ -117,8 +117,8 @@ main = do
 	let (events , places) = getGpsEventsAndPlaces minimalDiameter minimalDuration positions
 	let debits = getDebits bank mbegin mend
 
-	let begin = fromMaybe (pos_date $ head positions) mbegin
-	let end   = fromMaybe (pos_date $ last positions) mend
+	let begin = fromMaybe (trn_date $ head debits) mbegin
+	let end   = fromMaybe (trn_date $ last debits) mend
 	
 	putStrLn $ "Between " ++ show begin ++ " and " ++ show end ++ ", you recorded:"
 	printf "%d positions and\n" $ length positions
