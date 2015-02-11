@@ -7,6 +7,7 @@ module GpsData (
 	Place,
 	place,
 	place_diameter,
+	any_pos_in_place,
 	place_intersect,
 	contains,
 	place_merge,
@@ -64,11 +65,14 @@ loc `inside` pl  = 2 * distance loc (place_center pl) <= place_diameter pl
 
 contains :: Place -> Place -> Bool
 p1 `contains` p2 = all (`inside` p2) (place_locs p1)
-	
+
+any_pos_in_place :: [Location] -> Place -> Bool
+any_pos_in_place pos pl = any (`inside` pl) pos
+
 place_intersect :: Place -> Place -> Bool
 place_intersect p1 p2 =
-	any (`inside` p2) (place_locs p1) ||
-	any (`inside` p1) (place_locs p2)
+	any_pos_in_place (place_locs p1) p2 ||
+	any_pos_in_place (place_locs p2) p1
 
 place_merge :: Place -> Place -> Place
 place_merge p1 p2 =
