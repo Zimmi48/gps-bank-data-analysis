@@ -121,37 +121,47 @@ main = do
 	let end   = fromMaybe (pos_date $ last positions) mend
 	
 	putStrLn $ "Between " ++ show begin ++ " and " ++ show end ++ ", you recorded:"
-	printf "%d positions and\n" $ length positions
+	--printf "%d positions and\n" $ length positions
 	
 	putStr $ show (length debits) ++ " transactions at "
 	putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."
 	
-	printf "We found %d events.\n" $ length events
-	printf "Among these, %d are fixed.\n" (length . filter (isFixed minimalDiameter) $ events)
-	let nonfixed_events = filter (not . isFixed minimalDiameter) events
-	printf
-		"The others have an average diameter of %f meters.\n"
-		( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
-	let places = getAllPlaces events
-	printf "We identified %d distinct locations.\n" $ length places
-	--print . dropWhile ((<10) . fst) . sortBy (compare `on` fst) $ zip (placeFrequency places events) places
+	--printf "We found %d events.\n" $ length events
+	--printf "Among these, %d are fixed.\n" (length . filter (isFixed minimalDiameter) $ events)
 	
-			--print $ nub $ map name debits
+	let nonfixed_events = filter (not . isFixed minimalDiameter) events
+	--printf
+	--	"The others have an average diameter of %f meters.\n"
+	--	( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
+	
+	let places = getAllPlaces events
+	--printf "We identified %d distinct locations.\n" $ length places
+	
+	-- Various info
+	
+	-- Print 10 transactions
+	--print $ take 10 debits
+	
+	-- All distinct vendor names
+	--print $ nub $ map name debits
 			
-			-- time between two positions
-			--let pntTimes = catMaybes $ map pntTime positions
-			--print $ length $ filter (< 90) $ zipWith diffUTCTime (drop 1 pntTimes) pntTimes
+	-- Show the three biggest spending
+	--putStrLn . show . take 3 . reverse $ sortBy (compare `on` amount) debits
+	
+	-- Most frequented places
+	--print . dropWhile ((<10) . fst) . sortBy (compare `on` fst) $ zip (placeFrequency places events) places
 			
-			-- test if debits are sorted
-			--putStrLn . show . and . (\dates -> zipWith (<=) dates (drop 1 dates)) $ map trn_date debits
-			-- The answer was no but now transactions are sorted after extraction.
-			-- test if positions are sorted already
-			--putStrLn . show . and . (\dates -> zipWith (<=) dates (drop 1 dates)) $ map pntTime positions
-			-- The answer is yes.
+	-- Time between two positions
+	--let pntTimes = catMaybes $ map pntTime positions
+	--print $ length $ filter (< 90) $ zipWith diffUTCTime (drop 1 pntTimes) pntTimes
 			
-			-- show the three biggest spending
-			--putStrLn . show . take 3 . reverse $ sortBy (compare `on` amount) debits
+	-- Test if debits are sorted
+	--putStrLn . show . and . (\dates -> zipWith (<=) dates (drop 1 dates)) $ map trn_date debits
+	-- The answer was no but now transactions are sorted after extraction.
+	-- Test if positions are sorted already
+	--putStrLn . show . and . (\dates -> zipWith (<=) dates (drop 1 dates)) $ map pntTime positions
+	-- The answer is yes.
 			
-			--putStrLn . show $ head positions
+	-- Close the files at the end only because of laziness	
 	hClose inp_bank
 	hClose inp_gps
