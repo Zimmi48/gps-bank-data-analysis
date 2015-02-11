@@ -121,26 +121,26 @@ main = do
 	let end   = fromMaybe (pos_date $ last positions) mend
 	
 	putStrLn $ "Between " ++ show begin ++ " and " ++ show end ++ ", you recorded:"
-	--printf "%d positions and\n" $ length positions
+	printf "%d positions and\n" $ length positions
 	
 	putStr $ show (length debits) ++ " transactions at "
 	putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."
 	
-	--printf "We found %d events.\n" $ length events
-	--printf "Among these, %d are fixed.\n" (length . filter (isFixed minimalDiameter) $ events)
+	printf "We found %d events.\n" $ length events
+	printf "Among these, %d are fixed.\n" (length . filter (isFixed minimalDiameter) $ events)
 	
 	let nonfixed_events = filter (not . isFixed minimalDiameter) events
-	--printf
-	--	"The others have an average diameter of %f meters.\n"
-	--	( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
+	printf
+		"The others have an average diameter of %f meters.\n"
+		( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
 	
 	let places = getAllPlaces events
-	--printf "We identified %d distinct locations.\n" $ length places
+	printf "We identified %d distinct locations.\n" $ length places
 	
 	-- Various info
 	
 	-- Print 10 transactions
-	--print $ take 10 debits
+	print $ take 10 debits
 	
 	-- All distinct vendor names
 	--print $ nub $ map name debits
@@ -149,7 +149,7 @@ main = do
 	--putStrLn . show . take 3 . reverse $ sortBy (compare `on` amount) debits
 	
 	-- Most frequented places
-	--print . dropWhile ((<10) . fst) . sortBy (compare `on` fst) $ zip (placeFrequency places events) places
+	print . take 10 . reverse . sortBy (compare `on` fst) $ zip (placeFrequency places events) places
 			
 	-- Time between two positions
 	--let pntTimes = catMaybes $ map pntTime positions
