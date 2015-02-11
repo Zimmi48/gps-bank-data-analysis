@@ -7,6 +7,7 @@ module GpsData (
 	Place,
 	place,
 	place_diameter,
+	inside,
 	any_pos_in_place,
 	place_intersect,
 	contains,

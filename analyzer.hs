@@ -114,7 +114,7 @@ main = do
 			getJSONPositions gps minimalDiameter mbegin mend
 		else
 			getPositions gps mbegin mend
-	let events = getGpsEvents minimalDiameter minimalDuration positions
+	let (events , places) = getGpsEventsAndPlaces minimalDiameter minimalDuration positions
 	let debits = getDebits bank mbegin mend
 
 	let begin = fromMaybe (pos_date $ head positions) mbegin
@@ -133,8 +133,6 @@ main = do
 	printf
 		"The others have an average diameter of %f meters.\n"
 		( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
-	
-	let places = getAllPlaces events
 	printf "We identified %d distinct locations.\n" $ length places
 	
 	-- Various info

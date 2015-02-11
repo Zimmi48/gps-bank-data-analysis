@@ -1,4 +1,4 @@
-module GpsDataMining (getGpsEvents , getAllPlaces , placeFrequency , isFixed , event_diameter, event_place) where
+module GpsDataMining (getGpsEventsAndPlaces , placeFrequency , isFixed , event_diameter, event_place) where
 
 import Data.List
 import Data.Maybe
@@ -9,30 +9,39 @@ import Sublist
 
 {- GPS data mining -}
 
--- looks like this way of merging places is too large and almost everything end up in the same place
-getAllPlaces = places_merge . map event_place
-
 placeFrequency places events = map (\pl -> length . filter (contains pl . event_place) $ events) places
 
-normalizeEventPlace :: Event -> [Place] -> Maybe Event
-normalizeEventPlace e all_places =
-	let place = event_place e in
-	find (`contains` place) all_places >>=
-	\pl -> return $
-		Event
-			(event_all_positions e) pl
-			(event_begin e) (event_end e) (event_span e) (event_totalDistance e)
+indexes :: [Int]
+indexes = [0..]
 
-getGpsEvents :: Double -> NominalDiffTime -> [Position] -> [Event]
--- doing the merge or not does not seem to have a high impact on the number of distinct places
-getGpsEvents minimalDiameter minimalDuration =
-	mapMaybe (toEvent minimalDiameter) .
-	--map (foldr1 $ event_merge minimalDiameter) .
-	--groupBy (place_intersect `on` event_place) .
-	unfoldr (nextEvent minimalDiameter minimalDuration)
+place_merge_2 (pl1 , i1) (pl2 , i2) = (place_merge pl1 pl2 , i1 ++ i2)
+
+-- This function returns the events and the places even if the latter can be
+-- easily extracted from the former.
+-- This is redundant information but yay laziness!
+getGpsEventsAndPlaces :: Double -> NominalDiffTime -> [Position] -> ([Event] , [Place])
+getGpsEventsAndPlaces minimalDiameter minimalDuration track =
+	let raw_events = unfoldr (nextEvent minimalDiameter minimalDuration) track in
+	let raw_events_pos = map (map pos_location) raw_events :: [[Location]] in
+	let placeEvent (locs , i) places =
+		let (here , elsewhere) = partition (any_pos_in_place locs . fst) places in
+		foldr place_merge_2 (place locs minimalDiameter , [i]) here : elsewhere
+	in
+	-- It'd be interesting to know whether applying places_merge is useful or not
+	let raw_events_pos_indexed = zip raw_events_pos indexes :: [([Location] , Int)] in
+	let places = foldr placeEvent [] raw_events_pos_indexed in
+	let place_of_event i =
+		find ((i `elem`) . snd) places >>= \(pl,_) -> return pl
+		:: Maybe Place
+	in
+	let merged_events =
+		mapMaybe (toEvent minimalDiameter . concat . map fst) .
+		groupBy ((==) `on` (place_of_event . snd)) $
+		zip raw_events indexes
+	in
+	(merged_events , map fst places)
 
 data Event = Event {
-	event_all_positions :: [Position],
 	event_place :: Place,
 	event_begin :: UTCTime,
 	event_end :: UTCTime,
@@ -55,7 +64,6 @@ toEvent minimalDiameter pos =
 	let begin = pos_date $ head pos in
 	let end = pos_date $ last pos in
 	return $ Event {
-		event_all_positions = pos,
 		event_place = place locs minimalDiameter,
 		event_begin = begin,
 		event_end = end,
