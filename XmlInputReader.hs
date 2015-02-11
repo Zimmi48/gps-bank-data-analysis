@@ -26,7 +26,7 @@ getDebits input mbegin mend =
 	let before_end =
 		case mend of
 		Nothing -> all_debits
-		Just end -> filter ((<= end) . trn_date) all_debits
+		Just end -> filter ((< end) . trn_date) all_debits
 	in
 	let after_begin =
 		case mbegin of
