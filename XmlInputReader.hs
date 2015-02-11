@@ -47,7 +47,7 @@ extractTrnDetails input =
 			Just $ Transaction {
 				name = name ,
 				amount = - (read amount) ,
-				trn_date = readTime defaultTimeLocale "%Y%m%d%H%M%S%Q" date
+				trn_date = readTime defaultTimeLocale "%Y%m%d" $ take 8 date
 			}
 		_ -> Nothing
 
