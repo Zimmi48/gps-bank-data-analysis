@@ -14,7 +14,7 @@ import XmlInputReader
 import JsonInputReader
 import GpsDataMining
 
-data Flag = Help | Duration Int | Accuracy Double | Json | Kml | Begin UTCTime | End UTCTime deriving Eq
+data Flag = Help | Duration Int | Accuracy Int | Json | Kml | Begin UTCTime | End UTCTime deriving Eq
 duration (Duration d) = Just d
 duration _ = Nothing
 accuracy (Accuracy a) = Just a
@@ -104,9 +104,10 @@ main = do
 	let mbegin = listToMaybe $ mapMaybe begin opts
 	let mend   = listToMaybe $ mapMaybe end   opts
 	
-	let minimalDiameter = fromMaybe 40  . listToMaybe $ mapMaybe accuracy opts
+	let minimalDiameter =
+		fromIntegral . fromMaybe 40  . listToMaybe $ mapMaybe accuracy opts
 	let minimalDuration =
-		fromIntegral . fromMaybe 300 . listToMaybe $ mapMaybe duration opts :: NominalDiffTime
+		fromIntegral . fromMaybe 300 . listToMaybe $ mapMaybe duration opts
 	
 	let positions =
 		if Json `elem` opts then
