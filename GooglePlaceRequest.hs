@@ -8,6 +8,8 @@ import JsonInputReader
 import GpsData
 import BankData
 
+-- Attention: the number of request per day is limited to 1000
+-- It can be reached very rapidly!
 findEstablishment place trn accuracy = withSocketsDo $
     liftM (listToMaybe . getEstablishments) $ simpleHttp url
     where

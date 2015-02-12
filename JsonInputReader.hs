@@ -10,6 +10,7 @@ import Data.Time
 import Data.Aeson
 import qualified Data.ByteString.Lazy.Internal as BS
 import GpsData
+import Establishment
 
 {- Functions to treat the JSON GPS data -}
 -- JSON data is less cool to read but it contains information about accuracy
@@ -103,14 +104,6 @@ instance FromJSON GoogleLocation where
     parseJSON _ = mzero
 
 getGooglePlaces input = fromMaybe [] $ liftM results $ (decode input :: Maybe GooglePlaces)
-
-data Establishment = Establishment {
-    establishment_location :: Location,
-    establishment_name :: String,
-    establishment_address :: String
-}
-instance Show Establishment where
-    show e = establishment_name e ++ " at " ++ establishment_address e
 
 getEstablishments :: BS.ByteString -> [Establishment]
 getEstablishments input = getGooglePlaces input >>= (\pl ->
