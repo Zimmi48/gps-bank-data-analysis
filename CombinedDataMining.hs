@@ -1,4 +1,4 @@
-module CombinedDataMining (groupByDays) where
+module CombinedDataMining (groupByDays , allPlacesAndEstablishments) where
 
 import Control.Monad
 import Data.Time

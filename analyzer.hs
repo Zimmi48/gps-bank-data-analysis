@@ -142,6 +142,10 @@ main = do
 	--	( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
 	printf "We identified %d distinct locations.\n" $ length places
 
+	let dayByDay = groupByDays events debits
+	pl_establ <- allPlacesAndEstablishments 3 minimalDiameter dayByDay places
+	print $ take 3 pl_establ
+
 	-- Various info
 
 	-- Print 10 transactions
@@ -151,8 +155,8 @@ main = do
 	--print $ nub $ map name debits
 
 	-- Maximum number of transactions per day
-	--print . maximum . map (length . snd) $ groupByDays events debits
-	
+	--print . maximum . map (length . snd) dayByDay
+
 	-- Show the three biggest spending
 	--putStrLn . show . take 3 . reverse $ sortBy (compare `on` amount) debits
 
