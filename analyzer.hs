@@ -144,7 +144,7 @@ main = do
 
 	let dayByDay = groupByDays events debits
 	pl_establ <- allPlacesAndEstablishments 3 minimalDiameter dayByDay places
-	print $ take 3 pl_establ
+	print . take 3 $ filter (not . null . snd) pl_establ
 
 	-- Various info
 

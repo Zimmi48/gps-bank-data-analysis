@@ -14,7 +14,13 @@ import Establishment
 -- It can be reached very rapidly!
 findEstablishment :: Double -> Place -> String -> IO (Maybe Establishment)
 findEstablishment accuracy place vendor = withSocketsDo $
-    liftM (listToMaybe . getEstablishments) $ simpleHttp url
+    simpleHttp url >>=
+    \answer -> do
+        let establ = listToMaybe $ getEstablishments answer
+        --case establ of
+        --  Nothing -> putStrLn "Establishment not found!"
+        --  Just e  -> putStrLn $ "Found: " ++ show e
+        return establ
     where
         url = base_url ++ location ++ radius ++ keyword ++ types ++ key
         base_url = "https://maps.googleapis.com/maps/api/place/search/json?"

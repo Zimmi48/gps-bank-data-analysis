@@ -80,7 +80,7 @@ instance FromJSON GooglePlace where
         GooglePlace     <$>
         v .: "geometry" <*>
         v .: "name"     <*>
-        v .: "vivinity"
+        v .: "vicinity"
     parseJSON _ = mzero
 
 data GoogleGeometry = GoogleGeometry { location :: GoogleLocation } deriving (Show)
