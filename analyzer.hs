@@ -46,7 +46,7 @@ options = [
 		["accuracy"]
 		(ReqArg (Accuracy . read) "A") $
 		"Set the minimal accuracy of GPS points in meters (default 40).\n" ++
-		"Should be used in combination with the JSON option.\n",
+		"Makes more sense if used in combination with the JSON option.\n",
 	Option
 		['r']
 		["requests"]
@@ -88,8 +88,6 @@ parseArgs = do
 		(opts , [gps,bank] , []) ->
 			if Help `elem` opts then
 				help name
-			else if not $ Json `elem` opts || all ((==Nothing) . accuracy) opts then
-				die name ["Error: option accuracy should be used in combination with the JSON option.\n"]
 			else if Json `elem` opts && Kml `elem` opts then
 				die name ["Error: option KML and JSON are incompatible.\n"]
 			else
