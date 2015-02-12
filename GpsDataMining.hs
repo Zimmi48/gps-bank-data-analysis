@@ -69,6 +69,6 @@ isEvent minimalDiameter sl =
 	let loc = map pos_location pos in
 	let tot_dist = totalDistance loc in
 	let duration = timeSpan pos in
-	diameter loc <= max minimalDiameter (tot_dist * 120 / duration) &&
+	diameter loc <= max minimalDiameter (tot_dist / 2) &&
 	-- speed limitation
 	tot_dist <= 2*duration
