@@ -128,7 +128,7 @@ main = do
 	let (events , places) = getGpsEventsAndPlaces minimalDiameter minimalDuration positions
 
 	putStrLn $ "Between " ++ show begin ++ " and " ++ show end ++ ", you recorded:"
-	--printf "%d positions and\n" $ length positions
+	printf "%d positions and\n" $ length positions
 
 	putStr $ show (length debits) ++ " transactions at "
 	putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."
@@ -142,9 +142,8 @@ main = do
 	--	( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
 	printf "We identified %d distinct locations.\n" $ length places
 
-	let dayByDay = groupByDays events debits
-	pl_establ <- allPlacesAndEstablishments 3 minimalDiameter dayByDay places
-	print . take 3 $ filter (not . null . snd) pl_establ
+	spendingEvents <- getSpendingEvents 3 minimalDiameter events places debits
+	print spendingEvents
 
 	-- Various info
 
@@ -155,6 +154,7 @@ main = do
 	--print $ nub $ map name debits
 
 	-- Maximum number of transactions per day
+	--let dayByDay = groupByDay events debits
 	--print . maximum . map (length . snd) dayByDay
 
 	-- Show the three biggest spending
