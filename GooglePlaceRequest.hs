@@ -1,16 +1,19 @@
-module GooglePlaceRequest (findEstablishment) where
+module GooglePlaceRequest ( findEstablishment , placeEstablishments ) where
 
 import Data.Maybe
+import Data.List
 import Control.Monad
 import Network.HTTP.Conduit
 import Network (withSocketsDo)
 import JsonInputReader
 import GpsData
 import BankData
+import Establishment
 
 -- Attention: the number of request per day is limited to 1000
 -- It can be reached very rapidly!
-findEstablishment place trn accuracy = withSocketsDo $
+findEstablishment :: Double -> Place -> Transaction -> IO (Maybe Establishment)
+findEstablishment accuracy place trn = withSocketsDo $
     liftM (listToMaybe . getEstablishments) $ simpleHttp url
     where
         url = base_url ++ location ++ radius ++ keyword ++ types ++ key
@@ -21,3 +24,13 @@ findEstablishment place trn accuracy = withSocketsDo $
         types    = "types=establishment&"
         key      = "key=" ++
         -- this can be changed
+
+placeEstablishments :: Int -> Double -> Place -> [Transaction] -> IO [Establishment]
+placeEstablishments maxRequests accuracy place trns =
+    liftM catMaybes $
+    sequence $
+    map (findEstablishment accuracy place) (take maxRequests trns)
+-- even if there are more transactions associated to one given place
+-- we do not allow for a very large number of API requests per place
+
+

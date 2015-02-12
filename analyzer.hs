@@ -14,6 +14,7 @@ import GpsData
 import XmlInputReader
 import JsonInputReader
 import GpsDataMining
+import CombinedDataMining
 
 data Flag = Help | Duration Int | Accuracy Int | Json | Kml | Begin Day | End Day deriving Eq
 duration (Duration d) = Just d
@@ -127,12 +128,12 @@ main = do
 	let (events , places) = getGpsEventsAndPlaces minimalDiameter minimalDuration positions
 
 	putStrLn $ "Between " ++ show begin ++ " and " ++ show end ++ ", you recorded:"
-	printf "%d positions and\n" $ length positions
+	--printf "%d positions and\n" $ length positions
 
 	putStr $ show (length debits) ++ " transactions at "
 	putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."
 
-	--printf "We found %d events.\n" $ length events
+	printf "We found %d events.\n" $ length events
 	--printf "Among these, %d are fixed.\n" (length . filter (isFixed minimalDiameter) $ events)
 
 	let nonfixed_events = filter (not . isFixed minimalDiameter) events
@@ -147,13 +148,16 @@ main = do
 	--print $ take 10 debits
 
 	-- All distinct vendor names
-	print $ nub $ map name debits
+	--print $ nub $ map name debits
 
+	-- Maximum number of transactions per day
+	--print . maximum . map (length . snd) $ groupByDays events debits
+	
 	-- Show the three biggest spending
 	--putStrLn . show . take 3 . reverse $ sortBy (compare `on` amount) debits
 
 	-- Most frequented places
-	print . take 10 . reverse . sortBy (compare `on` fst) $ zip (placeFrequency places events) places
+	--print . take 10 . reverse . sortBy (compare `on` fst) $ zip (placeFrequency places events) places
 
 	-- Time between two positions
 	--let pntTimes = catMaybes $ map pntTime positions

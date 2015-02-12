@@ -3,6 +3,8 @@ module CombinedDataMining (groupByDays) where
 import Data.Time
 import GpsData
 import BankData
+import Establishment
+import GooglePlaceRequest
 
 groupByDays :: [Event] -> [Transaction] -> [( [Event] , [Transaction] )]
 -- return lists of events and transactions for each day
@@ -41,3 +43,10 @@ trnsOfPlace pl = flip foldr [] $
 	\(events , trns) acc ->
 		if any ((== pl) . event_place) events then trns ++ acc else acc
 
+allPlacesAndEstablishments :: Int -> Double -> [( [Event] , [Transaction] )] -> [Place] -> IO [(Place, [Establishment])]
+allPlacesAndEstablishments _ _ _ [] = return []
+allPlacesAndEstablishments maxRequests accuracy dayByDay (hd : tl) = do
+    following <- allPlacesAndEstablishments maxRequests accuracy dayByDay tl
+    let trns = trnsOfPlace hd dayByDay
+    establishments <- placeEstablishments maxRequests accuracy hd trns
+    return $ (hd , establishments) : following

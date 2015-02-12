@@ -9,5 +9,3 @@ data Establishment = Establishment {
 }
 instance Show Establishment where
     show e = establishment_name e ++ " at " ++ establishment_address e
-
---placeEstablishments :: Place -> [Transaction] -> [Establishments]
