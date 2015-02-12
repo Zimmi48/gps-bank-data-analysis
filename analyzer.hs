@@ -16,11 +16,13 @@ import JsonInputReader
 import GpsDataMining
 import CombinedDataMining
 
-data Flag = Help | Duration Int | Accuracy Int | Json | Kml | Begin Day | End Day deriving Eq
+data Flag = Help | Duration Int | Accuracy Int | Requests Int | Json | Kml | Begin Day | End Day deriving Eq
 duration (Duration d) = Just d
 duration _ = Nothing
 accuracy (Accuracy a) = Just a
 accuracy _ = Nothing
+requests (Requests r) = Just r
+requests _ = Nothing
 begin (Begin d) = Just d
 begin _ = Nothing
 end (End d) = Just d
@@ -43,6 +45,11 @@ options = [
 		(ReqArg (Accuracy . read) "A") $
 		"Set the minimal accuracy of GPS points in meters (default 40).\n" ++
 		"Should be used in combination with the JSON option.\n",
+	Option
+		['r']
+		["requests"]
+		(ReqArg (Requests . read) "R") $
+		"Set the maximal number of Google Places API requests per place (default 3).\n",
 	Option
 		['j']
 		["json"]
@@ -118,6 +125,7 @@ main = do
 		fromIntegral . fromMaybe 40  . listToMaybe $ mapMaybe accuracy opts
 	let minimalDuration =
 		fromIntegral . fromMaybe 300 . listToMaybe $ mapMaybe duration opts
+	let requestNb = fromMaybe 3 . listToMaybe $ mapMaybe requests opts
 
 	-- using the first and last transaction to give bounds to GPS positions extractions
 	let positions =
@@ -142,8 +150,8 @@ main = do
 	--	( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
 	printf "We identified %d distinct locations.\n" $ length places
 
-	spendingEvents <- getSpendingEvents 3 minimalDiameter events places debits
-	print spendingEvents
+	spendingEvents <- getSpendingEvents requestNb minimalDiameter events places debits
+	print $ nub spendingEvents
 
 	-- Various info
 

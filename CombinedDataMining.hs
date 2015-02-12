@@ -65,7 +65,7 @@ data SpendingEvent = SpendingEvent {
     spending_amount :: Double,
     spending_begin :: UTCTime,
     spending_end :: UTCTime
-} deriving (Show)
+} deriving (Show, Eq)
 
 getSpendingEvents :: Int -> Double -> [Event] -> [Place] -> [Transaction] -> IO [SpendingEvent]
 getSpendingEvents maxRequests accuracy events places trns = do
