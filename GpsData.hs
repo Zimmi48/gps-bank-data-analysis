@@ -5,6 +5,7 @@ module GpsData (
 	Location,
 	toLocation,
     showLocation,
+    distance,
 	Place,
 	place,
 	place_diameter,

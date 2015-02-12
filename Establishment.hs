@@ -1,4 +1,4 @@
-module Establishment ( Establishment(Establishment) ) where
+module Establishment ( Establishment(Establishment) , establishment_location ) where
 
 import GpsData
 

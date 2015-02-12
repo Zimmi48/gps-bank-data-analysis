@@ -11,6 +11,7 @@ import Data.Time
 import Data.Time.Format
 import Data.List
 import Data.Maybe
+import Data.Function
 import GpsData
 import BankData
 import Establishment
@@ -87,12 +88,16 @@ getSpendingEvents maxRequests accuracy events places trns = do
     return . concat $ map (getDaySpending pl_establs) dayByDay
     where
         getDaySpending _ (_ , []) = []
-        getDaySpending pl_establs (events , trns) = do
+        getDaySpending pl_establs (events , trns) = events >>=
             -- let's consider one gps event at the time
-            e <- events
-            let pl = event_place e
-            -- let's consider one possible establishment at the time
-            (establ , keywords) <- fromMaybe [] . liftM snd $ find ((== pl) . fst) pl_establs
-            -- let's consider one possible transaction at the time
-            trn <- filter ((== keywords) . name) trns
-            return $ SpendingEvent establ (amount trn) (event_begin e) (event_end e)
+            \e ->
+            let pl = event_place e in
+            -- for each event, we keep only the closest solution
+            take 1 .
+            sortBy (on compare $ (distance $ place_center pl) . establishment_location . spending_establishment) $
+            do
+                -- let's consider one possible establishment at the time
+                (establ , keywords) <- fromMaybe [] . liftM snd $ find ((== pl) . fst) pl_establs
+                -- let's consider one possible transaction at the time
+                trn <- filter ((== keywords) . name) trns
+                return $ SpendingEvent establ (amount trn) (event_begin e) (event_end e)
