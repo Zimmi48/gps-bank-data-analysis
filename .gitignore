@@ -1,3 +1,14 @@
+# Compiled files
 *.hi
 *.o
 *.exe
+analyzer
+
+# Not specific to this project but to SageMathCloud
+*.sage-chat
+*.sage-history
+
+# Input data file
+*.kml
+*.json
+*.ofx
