@@ -71,15 +71,15 @@ data SpendingEvent = SpendingEvent {
 } deriving (Eq)
 instance Show SpendingEvent where
     show sp =
-        "{Establishment = " ++
+        "\n\t{Establishment = " ++
         show (spending_establishment sp) ++
-        "; amount = " ++
+        ";\n\t\t amount = " ++
         show (spending_amount sp) ++
-        "; between " ++
+        ";\n\t\t between " ++
         formatTime defaultTimeLocale "%Y-%m-%d %H:%M" (spending_begin sp) ++
         " and " ++
         formatTime defaultTimeLocale "%Y-%m-%d %H:%M" (spending_end sp) ++
-        "}"
+        "}\n"
 
 getSpendingEvents :: Int -> Double -> [Event] -> [Place] -> [Transaction] -> IO [SpendingEvent]
 getSpendingEvents maxRequests accuracy events places trns = do
