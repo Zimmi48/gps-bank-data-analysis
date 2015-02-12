@@ -5,8 +5,10 @@ module CombinedDataMining (
     getSpendingEvents
 ) where
 
+import System.Locale
 import Control.Monad
 import Data.Time
+import Data.Time.Format
 import Data.List
 import Data.Maybe
 import GpsData
@@ -65,7 +67,18 @@ data SpendingEvent = SpendingEvent {
     spending_amount :: Double,
     spending_begin :: UTCTime,
     spending_end :: UTCTime
-} deriving (Show, Eq)
+} deriving (Eq)
+instance Show SpendingEvent where
+    show sp =
+        "{establishment = " ++
+        show (spending_establishment sp) ++
+        ", amount = " ++
+        show (spending_amount sp) ++
+        "between " ++
+        formatTime defaultTimeLocale "%Y-%m-%d %H:%M" (spending_begin sp) ++
+        " and " ++
+        formatTime defaultTimeLocale "%Y-%m-%d %H:%M" (spending_end sp) ++
+        "}"
 
 getSpendingEvents :: Int -> Double -> [Event] -> [Place] -> [Transaction] -> IO [SpendingEvent]
 getSpendingEvents maxRequests accuracy events places trns = do

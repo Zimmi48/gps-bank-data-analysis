@@ -91,14 +91,16 @@ remove_repeating (hd : tl) =
 {- Functions to treat the KML format -}
 
 -- the second argument may be a couple of begin / end date
-getPositions :: String -> Day -> Day -> [Position]
-getPositions input =
+getPositions :: String -> NominalDiffTime -> Day -> Day -> [Position]
+getPositions input diffTime =
 	let contents = to_nodes_and_texts input in
 	let (dates , coords) = dates_coords contents in
 	filter_track $
 		zipWith (\date coord ->
 			let longitude : latitude : _ = splitOn " " coord in
-			Position (toLocation (read latitude) (read longitude)) (readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
+			Position
+				(toLocation (read latitude) (read longitude))
+				(addUTCTime diffTime $ readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
 		) dates coords
 
 dates_coords [] = ([], [])

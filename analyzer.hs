@@ -16,7 +16,7 @@ import JsonInputReader
 import GpsDataMining
 import CombinedDataMining
 
-data Flag = Help | Duration Int | Accuracy Int | Requests Int | Json | Kml | Begin Day | End Day deriving Eq
+data Flag = Help | Duration Int | Accuracy Int | Requests Int | Json | Kml | Begin Day | End Day | TimeDifference Int deriving (Eq)
 duration (Duration d) = Just d
 duration _ = Nothing
 accuracy (Accuracy a) = Just a
@@ -27,6 +27,8 @@ begin (Begin d) = Just d
 begin _ = Nothing
 end (End d) = Just d
 end _ = Nothing
+timeDifference (TimeDifference t) = Just t
+timeDifference _ = Nothing
 
 options = [
 	Option
@@ -70,7 +72,12 @@ options = [
 		['e']
 		["end"]
 		(ReqArg (End . readTime defaultTimeLocale "%Y-%m-%d") "\"YYYY-MM-DD\"") $
-		"Set the end date for GPS and transaction data selection (bounds included).\n"
+		"Set the end date for GPS and transaction data selection (bounds included).\n",
+	Option
+		['t']
+		["timedifference"]
+		(ReqArg (TimeDifference . read) "T") $
+		"Set the time difference between your time zone and UTC in hours (default 0).\n"
 	]
 
 parseArgs = do
@@ -121,18 +128,25 @@ main = do
 	let begin = fromMaybe (trn_date $ head debits) mbegin
 	let end   = fromMaybe (trn_date $ last debits) mend
 
-	let minimalDiameter =
-		fromIntegral . fromMaybe 40  . listToMaybe $ mapMaybe accuracy opts
-	let minimalDuration =
-		fromIntegral . fromMaybe 300 . listToMaybe $ mapMaybe duration opts
-	let requestNb = fromMaybe 3 . listToMaybe $ mapMaybe requests opts
+	let minimalDiameter = fromIntegral .   fromMaybe 40 . listToMaybe $
+		mapMaybe accuracy opts
+	let minimalDuration = fromIntegral .  fromMaybe 300 . listToMaybe $
+		mapMaybe duration opts
+	let requestNb =                         fromMaybe 3 . listToMaybe $
+		mapMaybe requests opts
+	let timeDiff = fromIntegral . (*(-3600)) . fromMaybe 0 . listToMaybe $
+		mapMaybe timeDifference opts
+	-- This timeDiff is a hack! We will remove it from the position dates
+	-- (which are absolute) rather than adding it to the transaction dates
+	-- because there is no proper support for time zones.
 
 	-- using the first and last transaction to give bounds to GPS positions extractions
 	let positions =
 		if Json `elem` opts then
-			getJSONPositions gpsJson minimalDiameter begin end
+			getJSONPositions gpsJson timeDiff minimalDiameter begin end
 		else
-			getPositions gps begin end
+			getPositions gps timeDiff begin end
+
 	let (events , places) = getGpsEventsAndPlaces minimalDiameter minimalDuration positions
 
 	putStrLn $ "Between " ++ show begin ++ " and " ++ show end ++ ", you recorded:"

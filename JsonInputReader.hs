@@ -15,9 +15,9 @@ import Establishment
 {- Functions to treat the JSON GPS data -}
 -- JSON data is less cool to read but it contains information about accuracy
 
-getJSONPositions :: BS.ByteString -> Double -> Day -> Day -> [Position]
+getJSONPositions :: BS.ByteString -> NominalDiffTime -> Double -> Day -> Day -> [Position]
 -- the input data is already sorted
-getJSONPositions input min_accuracy =
+getJSONPositions input timeDiff minAccuracy =
 	filter_track $ do
 		point <- getPoints input
 		let tMs = timestampMs point
@@ -26,8 +26,8 @@ getJSONPositions input min_accuracy =
 				(toLocation
 					(normalizeE7 $ latitudeE7 point)
 					(normalizeE7 $ longitudeE7 point))
-				(readTime defaultTimeLocale "%s" t)
-		if accuracy point <= min_accuracy then pos else []
+				(addUTCTime timeDiff $ readTime defaultTimeLocale "%s" t)
+		if accuracy point <= minAccuracy then pos else []
 
 data JSONPoint = JSONPoint {
 	timestampMs :: String,
