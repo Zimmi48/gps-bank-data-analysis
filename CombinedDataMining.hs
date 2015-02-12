@@ -1,6 +1,8 @@
 module CombinedDataMining (groupByDays) where
 
+import Control.Monad
 import Data.Time
+import Data.List
 import GpsData
 import BankData
 import Establishment
@@ -38,15 +40,16 @@ getDayEvents current (hd : tl)
 
 getDayTrns current = span $ (== current) . trn_date
 
-trnsOfPlace :: Place -> [( [Event] , [Transaction] )] -> [Transaction]
-trnsOfPlace pl = flip foldr [] $
+vendorsOfPlace :: Place -> [( [Event] , [Transaction] )] -> [String]
+vendorsOfPlace pl = flip foldr [] $
 	\(events , trns) acc ->
-		if any ((== pl) . event_place) events then trns ++ acc else acc
+		if any ((== pl) . event_place) events then nub (map name trns) ++ acc else acc
 
-allPlacesAndEstablishments :: Int -> Double -> [( [Event] , [Transaction] )] -> [Place] -> IO [(Place, [Establishment])]
-allPlacesAndEstablishments _ _ _ [] = return []
-allPlacesAndEstablishments maxRequests accuracy dayByDay (hd : tl) = do
-    following <- allPlacesAndEstablishments maxRequests accuracy dayByDay tl
-    let trns = trnsOfPlace hd dayByDay
-    establishments <- placeEstablishments maxRequests accuracy hd trns
-    return $ (hd , establishments) : following
+allPlacesAndEstablishments :: Int -> Double -> [( [Event] , [Transaction] )] -> [Place] -> IO [( Place, [(Establishment , String)] )]
+allPlacesAndEstablishments maxRequests accuracy dayByDay places =
+    liftM (zip places) $
+    mapM aux places
+    where
+        aux place = placeEstablishments maxRequests accuracy place (vendorsOfPlace place dayByDay)
+
+

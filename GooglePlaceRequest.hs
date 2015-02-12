@@ -12,25 +12,30 @@ import Establishment
 
 -- Attention: the number of request per day is limited to 1000
 -- It can be reached very rapidly!
-findEstablishment :: Double -> Place -> Transaction -> IO (Maybe Establishment)
-findEstablishment accuracy place trn = withSocketsDo $
+findEstablishment :: Double -> Place -> String -> IO (Maybe Establishment)
+findEstablishment accuracy place vendor = withSocketsDo $
     liftM (listToMaybe . getEstablishments) $ simpleHttp url
     where
         url = base_url ++ location ++ radius ++ keyword ++ types ++ key
         base_url = "https://maps.googleapis.com/maps/api/place/search/json?"
         location = "location=" ++ showLocation (place_center place) ++ "&"
         radius   = "radius="   ++ show (max 100 $ 2*accuracy)       ++ "&"
-        keyword  = "keyword="  ++ name trn                          ++ "&"
+        keyword  = "keyword="  ++ vendor                            ++ "&"
         types    = "types=establishment&"
         key      = "key=" ++
         -- this can be changed
 
-placeEstablishments :: Int -> Double -> Place -> [Transaction] -> IO [Establishment]
-placeEstablishments maxRequests accuracy place trns =
-    liftM catMaybes $
+-- establishments remain associated with a vendor name for future reuse
+placeEstablishments :: Int -> Double -> Place -> [String] -> IO [( Establishment , String )]
+placeEstablishments maxRequests accuracy place vendors =
+    let tronc_vendors = take maxRequests vendors in
+    liftM (catMaybes . map toMaybePair . flip zip tronc_vendors) .
     sequence $
-    map (findEstablishment accuracy place) (take maxRequests trns)
--- even if there are more transactions associated to one given place
+    map (findEstablishment accuracy place) tronc_vendors
+-- even if there are more vendors associated to one given place
 -- we do not allow for a very large number of API requests per place
+
+toMaybePair (Nothing , _) = Nothing
+toMaybePair (Just x  , y) = Just (x , y)
 
 
