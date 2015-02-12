@@ -40,3 +40,5 @@ trnsOfPlace :: Place -> [( [Event] , [Transaction] )] -> [Transaction]
 trnsOfPlace pl = flip foldr [] $
 	\(events , trns) acc ->
 		if any ((== pl) . event_place) events then trns ++ acc else acc
+
+

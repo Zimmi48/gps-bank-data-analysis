@@ -98,7 +98,7 @@ getPositions input =
 	filter_track $
 		zipWith (\date coord ->
 			let longitude : latitude : _ = splitOn " " coord in
-			Position (location (read latitude) (read longitude)) (readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
+			Position (toLocation (read latitude) (read longitude)) (readTime defaultTimeLocale "%Y-%m-%dT%H:%M:%SZ" date)
 		) dates coords
 
 dates_coords [] = ([], [])

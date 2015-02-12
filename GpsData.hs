@@ -3,10 +3,12 @@ module GpsData (
 	pos_location,
 	pos_date,
 	Location,
-	location,
+	toLocation,
+    showLocation,
 	Place,
 	place,
 	place_diameter,
+    place_center,
 	Event,
 	toEvent,
 	event_place,
@@ -33,7 +35,8 @@ import Data.Function
 import Geo.Computations
 
 type Location = Point
-location lat lon = pt lat lon Nothing Nothing
+toLocation lat lon = pt lat lon Nothing Nothing
+showLocation loc = show (pntLat loc) ++ "," ++ show (pntLon loc)
 
 data Place = Place {
 	place_center :: Location,
@@ -46,9 +49,7 @@ instance Show Place
 		"{diameter = " ++
 		show (place_diameter pl) ++
 		", center = (" ++
-		show (pntLat c) ++
-		"," ++
-		show (pntLon c) ++
+		showLocation c ++
 		")}"
 place locs min_accuracy = foldr1 place_merge $ map (\c -> Place c min_accuracy [c]) locs
 
