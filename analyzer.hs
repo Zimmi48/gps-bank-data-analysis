@@ -7,6 +7,7 @@ import Data.Time
 import Data.Function
 import Data.List
 import Data.Maybe
+import qualified Data.ByteString.Lazy.Char8 as C
 import Text.Printf
 import BankData
 import GpsData
@@ -94,73 +95,77 @@ parseArgs = do
 
 main = do
 	(opts, gps_file, bank_file) <- parseArgs
-	
+
 	inp_gps  <- openFile gps_file  ReadMode
 	inp_bank <- openFile bank_file ReadMode
-	
+
+	-- if the file we need to read is in KML format we read it as a string
 	gps  <- hGetContents inp_gps
+	-- if it is in JSON format we read it as a ByteString
+	gpsJson <- C.readFile gps_file
+
 	bank <- hGetContents inp_bank
-	
+
 	let mbegin = listToMaybe $ mapMaybe begin opts
 	let mend   = listToMaybe $ mapMaybe end   opts
-	
+
 	let debits = getDebits bank mbegin mend
 	let begin = fromMaybe (trn_date $ head debits) mbegin
 	let end   = fromMaybe (trn_date $ last debits) mend
-	
+
 	let minimalDiameter =
 		fromIntegral . fromMaybe 40  . listToMaybe $ mapMaybe accuracy opts
 	let minimalDuration =
 		fromIntegral . fromMaybe 300 . listToMaybe $ mapMaybe duration opts
-	
+
 	-- using the first and last transaction to give bounds to GPS positions extractions
 	let positions =
 		if Json `elem` opts then
-			getJSONPositions gps minimalDiameter begin end
+			getJSONPositions gpsJson minimalDiameter begin end
 		else
 			getPositions gps begin end
 	let (events , places) = getGpsEventsAndPlaces minimalDiameter minimalDuration positions
-	
+
 	putStrLn $ "Between " ++ show begin ++ " and " ++ show end ++ ", you recorded:"
 	printf "%d positions and\n" $ length positions
-	
+
 	putStr $ show (length debits) ++ " transactions at "
 	putStrLn $ (show $ length $ nub $ map name debits) ++ " distinct vendors."
-	
+
 	--printf "We found %d events.\n" $ length events
 	--printf "Among these, %d are fixed.\n" (length . filter (isFixed minimalDiameter) $ events)
-	
+
 	let nonfixed_events = filter (not . isFixed minimalDiameter) events
 	--printf
 	--	"The others have an average diameter of %f meters.\n"
 	--	( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
 	printf "We identified %d distinct locations.\n" $ length places
-	
+
 	-- Various info
-	
+
 	-- Print 10 transactions
 	--print $ take 10 debits
-	
+
 	-- All distinct vendor names
 	print $ nub $ map name debits
-	
+
 	-- Show the three biggest spending
 	--putStrLn . show . take 3 . reverse $ sortBy (compare `on` amount) debits
-	
+
 	-- Most frequented places
 	print . take 10 . reverse . sortBy (compare `on` fst) $ zip (placeFrequency places events) places
-			
+
 	-- Time between two positions
 	--let pntTimes = catMaybes $ map pntTime positions
 	--print $ length $ filter (< 90) $ zipWith diffUTCTime (drop 1 pntTimes) pntTimes
-			
+
 	-- Test if debits are sorted
 	--putStrLn . show . and . (\dates -> zipWith (<=) dates (drop 1 dates)) $ map trn_date debits
 	-- The answer was no but now transactions are sorted after extraction.
 	-- Test if positions are sorted already
 	--putStrLn . show . and . (\dates -> zipWith (<=) dates (drop 1 dates)) $ map pntTime positions
 	-- The answer is yes.
-			
-	-- Close the files at the end only because of laziness	
+
+	-- Close the files at the end only because of laziness
 	hClose inp_bank
 	hClose inp_gps

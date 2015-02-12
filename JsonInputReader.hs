@@ -1,16 +1,20 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE OverloadedStrings  #-}
 module JsonInputReader (getJSONPositions , getEstablishments) where
 
 import System.Locale
+import Control.Monad
+import Control.Applicative
 import Data.List
+import Data.Maybe
 import Data.Time
-import Text.JSON.Generic
+import Data.Aeson
+import qualified Data.ByteString.Lazy.Internal as BS
 import GpsData
 
 {- Functions to treat the JSON GPS data -}
 -- JSON data is less cool to read but it contains information about accuracy
 
-getJSONPositions :: String -> Double -> Day -> Day -> [Position]
+getJSONPositions :: BS.ByteString -> Double -> Day -> Day -> [Position]
 -- the input data is already sorted
 getJSONPositions input min_accuracy =
 	filter_track $ do
@@ -29,34 +33,76 @@ data JSONPoint = JSONPoint {
 	latitudeE7 :: Int,
 	longitudeE7 :: Int,
 	accuracy :: Double
-} deriving (Show, Data, Typeable)
-data Gps = Gps { locations :: [JSONPoint] } deriving (Show, Data, Typeable)
+} deriving (Show)
 
-getPoints :: String -> [JSONPoint]
-getPoints input = locations (decodeJSON input :: Gps)
+instance FromJSON JSONPoint where
+    parseJSON (Object v) =
+        JSONPoint <$>
+        v .: "timestampMs" <*>
+        v .: "latitudeE7"  <*>
+        v .: "longitudeE7" <*>
+        v .: "accuracy"
+    parseJSON _ = mzero
+
+data Gps = Gps { locations :: [JSONPoint] } deriving (Show)
+
+instance FromJSON Gps where
+    parseJSON (Object v) =
+        Gps <$>
+        v .: "locations"
+    parseJSON _ = mzero
+
+getPoints input = fromMaybe [] $ liftM locations (decode input :: Maybe Gps)
 
 normalizeE7 :: Int -> Double
 normalizeE7 x = fromIntegral x / 10000000
 
 {- Functions to treat the JSON Google Places API response -}
 
-data GooglePlaces = GooglePlaces { results :: [GooglePlace] } deriving (Show, Data, Typeable)
+data GooglePlaces = GooglePlaces { results :: [GooglePlace] } deriving (Show)
+
+instance FromJSON GooglePlaces where
+    parseJSON (Object v) =
+        GooglePlaces <$>
+        v .: "results"
+    parseJSON _ = mzero
 
 data GooglePlace = GooglePlace {
     geometry :: GoogleGeometry,
     name :: String,
     -- we could retreive types
     vicinity :: String
-} deriving (Show, Data, Typeable)
+} deriving (Show)
 
-data GoogleGeometry = GoogleGeometry { location :: GoogleLocation } deriving (Show, Data, Typeable)
+instance FromJSON GooglePlace where
+    parseJSON (Object v) =
+        GooglePlace     <$>
+        v .: "geometry" <*>
+        v .: "name"     <*>
+        v .: "vivinity"
+    parseJSON _ = mzero
+
+data GoogleGeometry = GoogleGeometry { location :: GoogleLocation } deriving (Show)
+
+instance FromJSON GoogleGeometry where
+    parseJSON (Object v) =
+        GoogleGeometry <$>
+        v .: "location"
+    parseJSON _ = mzero
 
 data GoogleLocation = GoogleLocation {
     lat :: Double,
     lng :: Double
-} deriving (Show, Data, Typeable)
+} deriving (Show)
 
-getGooglePlaces input = results (decodeJSON input :: GooglePlaces)
+instance FromJSON GoogleLocation where
+    parseJSON (Object v) =
+        GoogleLocation <$>
+        v .: "lat"     <*>
+        v .: "lng"
+    parseJSON _ = mzero
+
+getGooglePlaces input = fromMaybe [] $ liftM results $ (decode input :: Maybe GooglePlaces)
 
 data Establishment = Establishment {
     establishment_location :: Location,
@@ -66,10 +112,11 @@ data Establishment = Establishment {
 instance Show Establishment where
     show e = establishment_name e ++ " at " ++ establishment_address e
 
-getEstablishments = map (\pl ->
+getEstablishments :: BS.ByteString -> [Establishment]
+getEstablishments input = getGooglePlaces input >>= (\pl ->
     let gLocation = location $ geometry pl in
-    Establishment
+    return $ Establishment
         (toLocation (lat gLocation) (lng gLocation))
         (name pl)
         (vicinity pl)
-    ) . getGooglePlaces
+    )
