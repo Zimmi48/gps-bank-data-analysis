@@ -134,7 +134,7 @@ main = do
 		mapMaybe duration opts
 	let requestNb =                         fromMaybe 3 . listToMaybe $
 		mapMaybe requests opts
-	let timeDiff = fromIntegral . (*(-3600)) . fromMaybe 0 . listToMaybe $
+	let timeDiff = fromIntegral . (*3600) . fromMaybe 0 . listToMaybe $
 		mapMaybe timeDifference opts
 	-- This timeDiff is a hack! We will remove it from the position dates
 	-- (which are absolute) rather than adding it to the transaction dates
