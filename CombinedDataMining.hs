@@ -70,11 +70,11 @@ data SpendingEvent = SpendingEvent {
 } deriving (Eq)
 instance Show SpendingEvent where
     show sp =
-        "{establishment = " ++
+        "{Establishment = " ++
         show (spending_establishment sp) ++
-        ", amount = " ++
+        "; amount = " ++
         show (spending_amount sp) ++
-        "between " ++
+        "; between " ++
         formatTime defaultTimeLocale "%Y-%m-%d %H:%M" (spending_begin sp) ++
         " and " ++
         formatTime defaultTimeLocale "%Y-%m-%d %H:%M" (spending_end sp) ++
