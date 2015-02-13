@@ -54,12 +54,12 @@ vendorsOfPlace pl = flip foldr [] $
 	\(events , trns) acc ->
 		if any ((== pl) . event_place) events then nub (map name trns) ++ acc else acc
 
-allPlacesAndEstablishments :: Int -> Double -> [( [Event] , [Transaction] )] -> [Place] -> IO [( Place, [(Establishment , String)] )]
-allPlacesAndEstablishments maxRequests accuracy dayByDay places =
+allPlacesAndEstablishments :: String -> Int -> Double -> [( [Event] , [Transaction] )] -> [Place] -> IO [( Place, [(Establishment , String)] )]
+allPlacesAndEstablishments apiKey maxRequests accuracy dayByDay places =
     liftM (zip places) $
     mapM aux places
     where
-        aux place = placeEstablishments maxRequests accuracy place (vendorsOfPlace place dayByDay)
+        aux place = placeEstablishments apiKey maxRequests accuracy place (vendorsOfPlace place dayByDay)
 
 -- This new datatype will contain all the data has been extracted on one event
 -- from all the sources
@@ -81,10 +81,10 @@ instance Show SpendingEvent where
         formatTime defaultTimeLocale "%Y-%m-%d %H:%M" (spending_end sp) ++
         "}\n"
 
-getSpendingEvents :: Int -> Double -> [Event] -> [Place] -> [Transaction] -> IO [SpendingEvent]
-getSpendingEvents maxRequests accuracy events places trns = do
+getSpendingEvents :: String -> Int -> Double -> [Event] -> [Place] -> [Transaction] -> IO [SpendingEvent]
+getSpendingEvents apiKey maxRequests accuracy events places trns = do
     let dayByDay = groupByDay events trns
-    pl_establs <- allPlacesAndEstablishments maxRequests accuracy dayByDay places
+    pl_establs <- allPlacesAndEstablishments apiKey maxRequests accuracy dayByDay places
     return . concat $ map (getDaySpending pl_establs) dayByDay
     where
         getDaySpending _ (_ , []) = []

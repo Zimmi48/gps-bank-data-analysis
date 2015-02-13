@@ -16,6 +16,10 @@ import JsonInputReader
 import GpsDataMining
 import CombinedDataMining
 
+{- Config file -}
+apiKey = withFile "analyzer.conf" ReadMode hGetLine
+
+{- Options -}
 data Flag = Help | Duration Int | Accuracy Int | Requests Int | Json | Kml | Begin Day | End Day | TimeDifference Int deriving (Eq)
 duration (Duration d) = Just d
 duration _ = Nothing
@@ -162,7 +166,8 @@ main = do
 	--	( (sum $ map event_diameter nonfixed_events) / (fromIntegral $ length nonfixed_events) )
 	printf "We identified %d distinct locations.\n" $ length places
 
-	spendingEvents <- getSpendingEvents requestNb minimalDiameter events places debits
+	key <- apiKey
+	spendingEvents <- getSpendingEvents key requestNb minimalDiameter events places debits
 	print $ nub spendingEvents
 
 	-- Various info

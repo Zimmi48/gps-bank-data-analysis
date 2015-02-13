@@ -12,3 +12,4 @@ analyzer
 *.kml
 *.json
 *.ofx
+*.conf
