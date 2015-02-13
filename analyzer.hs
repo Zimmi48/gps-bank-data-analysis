@@ -113,15 +113,12 @@ parseArgs = do
 main = do
 	(opts, gps_file, bank_file) <- parseArgs
 
-	inp_gps  <- openFile gps_file  ReadMode
-	inp_bank <- openFile bank_file ReadMode
-
 	-- if the file we need to read is in KML format we read it as a string
-	gps  <- hGetContents inp_gps
+	gps  <- readFile gps_file
 	-- if it is in JSON format we read it as a ByteString
 	gpsJson <- C.readFile gps_file
 
-	bank <- hGetContents inp_bank
+	bank <- readFile bank_file
 
 	let mbegin = listToMaybe $ mapMaybe begin opts
 	let mend   = listToMaybe $ mapMaybe end   opts
@@ -198,7 +195,3 @@ main = do
 	-- Test if positions are sorted already
 	--putStrLn . show . and . (\dates -> zipWith (<=) dates (drop 1 dates)) $ map pntTime positions
 	-- The answer is yes.
-
-	-- Close the files at the end only because of laziness
-	hClose inp_bank
-	hClose inp_gps
