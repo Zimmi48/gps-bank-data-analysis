@@ -15,7 +15,8 @@ of the gps, json-aeson and http-conduit cabal packages.
 
 To use it, you will need a Google Places API key. To create one, go to the
 [Google APIs Console](https://code.google.com/apis/console/?noredirect).
-Once you have it, copy-paste it in a file called "analyzer.conf".
+Once you have it, copy-paste it in a file called "analyzer.conf" in the local
+directory where you are going to run the software.
 
 To know all the options, do ```./analyzer --help```.
 
