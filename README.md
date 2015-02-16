@@ -4,7 +4,7 @@ of the Parisian Master of Research in Computer Science.
 
 ##Compile and use instructions
 To compile it, you will need the GHC compiler as well as the latest versions
-of the gps, json-aeson and http-conduit cabal packages.
+of the gps, aeson and http-conduit cabal packages.
 
     # Download the sources
     wget https://github.com/Zimmi48/gps-bank-data-analysis/archive/master.zip &&
