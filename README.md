@@ -2,7 +2,7 @@
 This software was originally programmed for the course "Web data management"
 of the Parisian Master of Research in Computer Science.
 
-##Compile and use instructions
+##How to build the software
 To compile it, you will need the GHC compiler as well as the latest versions
 of the gps and http-conduit cabal packages.
 
@@ -17,14 +17,16 @@ of the gps and http-conduit cabal packages.
     cd gps-bank-data-analysis &&
     ghc analyser.hs
 
-To use it, you will need a Google Places API key. To create one, go to the
+##How to use the software
+
+The first time you run the software, it will prompt you for
+a Google Places API key. To create one, go to the
 [Google APIs Console](https://code.google.com/apis/console/?noredirect).
-Once you have it, copy-paste it in a file called "analyzer.conf" in the local
-directory where you are going to run the software.
 
 To know all the options, do ```./analyzer --help```.
 
-##Input files
+###Input files
+
 The software takes as input a position data file (in KML or Google's JSON format).
 One way to get one would be going to
 [Google Takeout](https://www.google.com/settings/takeout)

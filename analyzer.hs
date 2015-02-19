@@ -4,6 +4,8 @@
  -}
 
 import System.IO
+import System.Directory
+import System.FilePath
 import System.Console.GetOpt
 import System.Environment
 import System.Exit
@@ -22,7 +24,23 @@ import GpsDataMining
 import CombinedDataMining
 
 {- Config file -}
-apiKey = withFile "analyzer.conf" ReadMode hGetLine
+apiKeyFile = do
+    appDataDir <- getAppUserDataDirectory "gpsbank"
+    createDirectoryIfMissing False appDataDir
+    return $ appDataDir </> "apikey"
+
+apiKey = do
+    filename <- apiKeyFile
+    fileExists <- doesFileExist filename
+    if fileExists then
+        readFile filename
+    else do
+        putStr "Please, provide a Google Places API key: "
+        hFlush stdout
+        key <- getLine
+        writeFile filename key
+        return key
+        
 
 {- Options -}
 data Flag = Help | Duration Int | Accuracy Int | Requests Int | Json | Kml | Begin Day | End Day | TimeDifference Int deriving (Eq)
@@ -109,7 +127,7 @@ parseArgs = do
 				die name ["Error: not the right number of arguments.\n"]
 	where
 		parse argv    = getOpt Permute options argv
-		header name   = "Usage: " ++ name ++ " [options] gps_file bank_file.\n"
+		header name   = "Usage: " ++ name ++ " [options] gps_file bank_file\n"
 		info name     = usageInfo (header name) options
 		dump          = hPutStrLn stderr
 		die name errs = dump (concat errs ++ info name) >> exitWith (ExitFailure 1)
