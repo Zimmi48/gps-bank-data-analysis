@@ -43,7 +43,7 @@ apiKey = do
         
 
 {- Options -}
-data Flag = Help | Duration Int | Accuracy Int | Requests Int | Json | Kml | Begin Day | End Day | TimeDifference Int deriving (Eq)
+data Flag = Help | Duration Int | Accuracy Int | Requests Int | Begin Day | End Day | TimeDifference Int deriving (Eq)
 duration (Duration d) = Just d
 duration _ = Nothing
 accuracy (Accuracy a) = Just a
@@ -72,24 +72,12 @@ options = [
 		['a']
 		["accuracy"]
 		(ReqArg (Accuracy . read) "A") $
-		"Set the minimal accuracy of GPS points in meters (default 40).\n" ++
-		"Makes more sense if used in combination with the JSON option.\n",
+		"Set the minimal accuracy of GPS points in meters (default 40).\n",
 	Option
 		['r']
 		["requests"]
 		(ReqArg (Requests . read) "R") $
 		"Set the maximal number of Google Places API requests per place (default 3).\n",
-	Option
-		['j']
-		["json"]
-		(NoArg Json) $
-		"Specify that the input GPS file will be in Google's JSON format.\n",
-	Option
-		['k']
-		["kml"]
-		(NoArg Kml) $
-		"Specify that the input GPS file will be in Google's KML format.\n" ++
-		"This is the default format so using this option is not required.\n",
 	Option
 		['b']
 		["begin"]
@@ -107,6 +95,8 @@ options = [
 		"Set the time difference between your time zone and UTC in hours (default 0).\n"
 	]
 
+dump          = hPutStrLn stderr
+
 parseArgs = do
 	argv <- getArgs
 	name <- getProgName
@@ -115,8 +105,6 @@ parseArgs = do
 		(opts , [gps,bank] , []) ->
 			if Help `elem` opts then
 				help name
-			else if Json `elem` opts && Kml `elem` opts then
-				die name ["Error: option KML and JSON are incompatible.\n"]
 			else
 				return (opts , gps , bank)
 		( _ , [gps,bank] , errs) -> die name (errs)
@@ -129,23 +117,16 @@ parseArgs = do
 		parse argv    = getOpt Permute options argv
 		header name   = "Usage: " ++ name ++ " [options] gps_file bank_file\n"
 		info name     = usageInfo (header name) options
-		dump          = hPutStrLn stderr
 		die name errs = dump (concat errs ++ info name) >> exitWith (ExitFailure 1)
 		help name     = dump (info name)                >> exitWith ExitSuccess
 
 main = do
 	(opts, gps_file, bank_file) <- parseArgs
 
-	-- if the file we need to read is in KML format we read it as a string
-	gps  <- readFile gps_file
-	-- if it is in JSON format we read it as a ByteString
-	gpsJson <- C.readFile gps_file
-
-	bank <- readFile bank_file
-
 	let mbegin = listToMaybe $ mapMaybe begin opts
 	let mend   = listToMaybe $ mapMaybe end   opts
 
+	bank <- readFile bank_file
 	let debits = getDebits bank mbegin mend
 	let begin = fromMaybe (trn_date $ head debits) mbegin
 	let end   = fromMaybe (trn_date $ last debits) mend
@@ -163,11 +144,16 @@ main = do
 	-- because there is no proper support for time zones.
 
 	-- using the first and last transaction to give bounds to GPS positions extractions
-	let positions =
-		if Json `elem` opts then
-			getJSONPositions gpsJson timeDiff minimalDiameter begin end
+	positions <-
+		if takeExtension gps_file == ".json" then do
+			gps <- C.readFile gps_file
+			return $ getJSONPositions gps timeDiff minimalDiameter begin end
+		else if takeExtension gps_file == ".kml" then do
+			gps <- readFile gps_file
+			return $ getPositions gps timeDiff begin end
 		else
-			getPositions gps timeDiff begin end
+			dump ("Position file: unknown extension '" ++ takeExtension gps_file ++ "'. Accept .json and .kml") >>
+			exitWith (ExitFailure 1)
 
 	let (events , places) = getGpsEventsAndPlaces minimalDiameter minimalDuration positions
 
