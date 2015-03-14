@@ -16,11 +16,6 @@ import Sublist
 
 placeFrequency places events = map (\pl -> length . filter (contains pl . event_place) $ events) places
 
-indexes :: [Int]
-indexes = [0..]
-
-place_merge_2 (pl1 , i1) (pl2 , i2) = (place_merge pl1 pl2 , i1 ++ i2)
-
 -- This function returns the events and the places even if the latter can be
 -- easily extracted from the former.
 -- This is redundant information but yay laziness!
@@ -33,7 +28,7 @@ getGpsEventsAndPlaces minimalDiameter minimalDuration track =
 		foldr place_merge_2 (place locs minimalDiameter , [i]) here : elsewhere
 	in
 	-- It'd be interesting to know whether applying places_merge is useful or not
-	let raw_events_pos_indexed = zip raw_events_pos indexes :: [([Location] , Int)] in
+	let raw_events_pos_indexed = zip raw_events_pos [0..] :: [([Location] , Int)] in
 	let places = foldr placeEvent [] raw_events_pos_indexed in
 	let place_of_event i =
 		find ((i `elem`) . snd) places >>= \(pl,_) -> return pl
@@ -42,9 +37,11 @@ getGpsEventsAndPlaces minimalDiameter minimalDuration track =
 	let merged_events =
 		mapMaybe (toEvent minimalDiameter . concat . map fst) .
 		groupBy ((==) `on` (place_of_event . snd)) $
-		zip raw_events indexes
+		zip raw_events [0..]
 	in
 	(merged_events , map fst places)
+
+place_merge_2 (pl1 , i1) (pl2 , i2) = (place_merge pl1 pl2 , i1 ++ i2)
 
 -- nextEvent returns the next event (merging the successive 5 minutes events)
 -- and the rest of the list minus the head
