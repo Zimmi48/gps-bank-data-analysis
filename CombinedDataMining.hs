@@ -29,34 +29,34 @@ groupByDay :: [Event] -> [Transaction] -> [( [Event] , [Transaction] )]
 groupByDay [] _ = []
 groupByDay _ [] = []
 groupByDay events (hdt : tlt) =
-	( todayEvents , hdt : todayTrns ) : groupByDay followingEvents followingTrns
-	where
-	today = trn_date hdt
-	( todayEvents , followingEvents ) = getDayEvents today events
-	( todayTrns   , followingTrns   ) = getDayTrns   today tlt
+        ( todayEvents , hdt : todayTrns ) : groupByDay followingEvents followingTrns
+        where
+        today = trn_date hdt
+        ( todayEvents , followingEvents ) = getDayEvents today events
+        ( todayTrns   , followingTrns   ) = getDayTrns   today tlt
 
 getDayEvents _ [] = ([] , [])
 getDayEvents current (hd : tl)
-	-- this event was in the past but there may be other events to consider
-	| eEnd   < current = getDayEvents current tl
-	-- this event starts in the future thus all subsequent events too
-	| current < eBegin = ( [] , hd : tl )
-	-- this event finishes now so it cannot appear in the following
-	| eEnd  == current = ( hd : todayEvents , followingEvents )
-	-- this event is today but also in subsequent days
-	| otherwise = ( hd : todayEvents , hd : followingEvents )
-		-- we give hd in argument because it may reappear in followingEvents
-	where
-	eBegin = utctDay . event_begin $ hd
-	eEnd = utctDay . event_end $ hd
-	( todayEvents , followingEvents ) = getDayEvents current tl
+        -- this event was in the past but there may be other events to consider
+        | eEnd   < current = getDayEvents current tl
+        -- this event starts in the future thus all subsequent events too
+        | current < eBegin = ( [] , hd : tl )
+        -- this event finishes now so it cannot appear in the following
+        | eEnd  == current = ( hd : todayEvents , followingEvents )
+        -- this event is today but also in subsequent days
+        | otherwise = ( hd : todayEvents , hd : followingEvents )
+                -- we give hd in argument because it may reappear in followingEvents
+        where
+        eBegin = utctDay . event_begin $ hd
+        eEnd = utctDay . event_end $ hd
+        ( todayEvents , followingEvents ) = getDayEvents current tl
 
 getDayTrns current = span $ (== current) . trn_date
 
 vendorsOfPlace :: Place -> [( [Event] , [Transaction] )] -> [String]
 vendorsOfPlace pl = flip foldr [] $
-	\(events , trns) acc ->
-		if any ((== pl) . event_place) events then nub (map name trns) ++ acc else acc
+        \(events , trns) acc ->
+                if any ((== pl) . event_place) events then nub (map name trns) ++ acc else acc
 
 allPlacesAndEstablishments :: String -> Int -> Double -> [( [Event] , [Transaction] )] -> [Place] -> IO [( Place, [(Establishment , String)] )]
 allPlacesAndEstablishments apiKey maxRequests accuracy dayByDay places =

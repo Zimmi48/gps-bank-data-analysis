@@ -4,27 +4,27 @@
  -}
 
 module Sublist (
-		Sublist, -- this is the type, not the data constructor
-		sCons,
-		sHead,
-		sTail,
-		sLast,
-		sLength,
-		sEmpty,
-		fromList,
-		toList,
-		sSublist,
-		sPrefix,
-		sInits,
-		sInitsRev,
-		sTails,
-		sTakeUntil,
-		sFoldr,
-		sSum,
-		sProduct,
-		sDrop,
-		sTakeSublistsWhile
-	) where
+                Sublist, -- this is the type, not the data constructor
+                sCons,
+                sHead,
+                sTail,
+                sLast,
+                sLength,
+                sEmpty,
+                fromList,
+                toList,
+                sSublist,
+                sPrefix,
+                sInits,
+                sInitsRev,
+                sTails,
+                sTakeUntil,
+                sFoldr,
+                sSum,
+                sProduct,
+                sDrop,
+                sTakeSublistsWhile
+        ) where
 -- sLength is always correct by construction
 -- (cannot be larger than length . sList)
 import Data.List
@@ -33,23 +33,23 @@ import Data.List
 data Sublist t = Sublist { sList :: [t] , sLength :: Int }
 
 instance Show t => Show (Sublist t)
-	where show l =
-		case (sList l , sLength l) of
-		([] , _) -> "[]"
-		(_ ,  0) -> "[]"
-		(hd : tl , n) -> "[" ++ show hd ++ showRemaining tl (n - 1)
+        where show l =
+                case (sList l , sLength l) of
+                ([] , _) -> "[]"
+                (_ ,  0) -> "[]"
+                (hd : tl , n) -> "[" ++ show hd ++ showRemaining tl (n - 1)
 
 showRemaining [] _ = "]"
 showRemaining _  0 = "]"
 showRemaining (hd : tl) n = "," ++ show hd ++ showRemaining tl (n - 1)
 
 instance Eq t => Eq (Sublist t) where
-	l1 == l2 =
-		if sEmpty l1 then
-			sEmpty l2
-		else
-			sHead l1 == sHead l2 && sTail l1 == sTail l2
-	
+        l1 == l2 =
+                if sEmpty l1 then
+                        sEmpty l2
+                else
+                        sHead l1 == sHead l2 && sTail l1 == sTail l2
+        
 -- HOW TO CREATE SUBLISTS
 
 sCons :: t -> Sublist t -> Sublist t
@@ -66,12 +66,12 @@ fromList l = Sublist l $ length l
 -}
 sSublist :: Sublist t -> Int -> Int -> Sublist t
 sSublist l a n =
-	if sEmpty l then
-		Sublist [] 0
-	else if a == 0 then
-		sPrefix n l
-	else
-		sSublist (sTail l) (a - 1) n
+        if sEmpty l then
+                Sublist [] 0
+        else if a == 0 then
+                sPrefix n l
+        else
+                sSublist (sTail l) (a - 1) n
 
 -- a prefix of a sublist can be consistently represented by an int
 -- this function gives the sublist representation for this int.
@@ -88,10 +88,10 @@ sTail l = Sublist (tail $ sList l) (sLength l - 1)
 
 sLast :: Sublist t -> Maybe t
 sLast l =
-	case (sList l , sLength l) of
-	([] , _) -> Nothing
-	(_ ,  0) -> Nothing
-	(hd : tl , n) -> Just $ maybe hd id $ sLast $  Sublist tl $ n - 1
+        case (sList l , sLength l) of
+        ([] , _) -> Nothing
+        (_ ,  0) -> Nothing
+        (hd : tl , n) -> Just $ maybe hd id $ sLast $  Sublist tl $ n - 1
 
 sEmpty :: Sublist l -> Bool
 sEmpty l = sLength l == 0 || null (sList l)
@@ -119,21 +119,21 @@ sInits l = flip map [0 .. sLength l] $ Sublist $ sList l
 -- the last prefix element verifies the condition
 sTakeUntil :: (t -> Bool) -> Sublist t -> Int
 sTakeUntil condition l =
-	let sL = sList l in
-	case findIndex condition sL of
-	Just i -> i + 1
-	Nothing -> sLength l
+        let sL = sList l in
+        case findIndex condition sL of
+        Just i -> i + 1
+        Nothing -> sLength l
 
 sFoldr :: (t -> s -> s) -> s -> Sublist t -> s
 sFoldr f init l =
-	if sEmpty l then init else
-		sHead l `f` sFoldr f init (sTail l)
+        if sEmpty l then init else
+                sHead l `f` sFoldr f init (sTail l)
 
 sSum = sFoldr (+) 0
 sProduct = sFoldr (*) 1
 
 sDrop n l =
-	if n <= 0 then l else Sublist (drop n $ sList l) (max 0 $ sLength l - n)
+        if n <= 0 then l else Sublist (drop n $ sList l) (max 0 $ sLength l - n)
 
 -- the first argument is a function that given a sublist returns
 -- a prefix size
@@ -144,5 +144,5 @@ sDrop n l =
 -- precondition not checked : f l <= sLength l for all l
 sTakeSublistsWhile :: (Sublist t -> Int) -> Sublist t -> Int
 sTakeSublistsWhile f l =
-	let n = f l in
-	if n == 0 then 0 else max n $ sTakeSublistsWhile f $ sTail l
+        let n = f l in
+        if n == 0 then 0 else max n $ sTakeSublistsWhile f $ sTail l

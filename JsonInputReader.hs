@@ -22,22 +22,22 @@ import Establishment
 getJSONPositions :: BS.ByteString -> NominalDiffTime -> Double -> Day -> Day -> [Position]
 -- the input data is already sorted
 getJSONPositions input timeDiff minAccuracy =
-	filter_track $ do
-		point <- getPoints input
-		let tMs = timestampMs point
-		let t = take (length tMs - 3) tMs
-		let pos = return $ Position
-				(toLocation
-					(normalizeE7 $ latitudeE7 point)
-					(normalizeE7 $ longitudeE7 point))
-				(addUTCTime timeDiff $ readTime defaultTimeLocale "%s" t)
-		if accuracy point <= minAccuracy then pos else []
+        filter_track $ do
+                point <- getPoints input
+                let tMs = timestampMs point
+                let t = take (length tMs - 3) tMs
+                let pos = return $ Position
+                                (toLocation
+                                        (normalizeE7 $ latitudeE7 point)
+                                        (normalizeE7 $ longitudeE7 point))
+                                (addUTCTime timeDiff $ parseTimeOrError True defaultTimeLocale "%s" t)
+                if accuracy point <= minAccuracy then pos else []
 
 data JSONPoint = JSONPoint {
-	timestampMs :: String,
-	latitudeE7 :: Int,
-	longitudeE7 :: Int,
-	accuracy :: Double
+        timestampMs :: String,
+        latitudeE7 :: Int,
+        longitudeE7 :: Int,
+        accuracy :: Double
 } deriving (Show)
 
 instance FromJSON JSONPoint where
