@@ -5,7 +5,6 @@
 
 module XmlInputReader (getDebits , getPositions) where
 
-import System.Locale
 import Data.Maybe
 import Data.List
 import Data.List.Split

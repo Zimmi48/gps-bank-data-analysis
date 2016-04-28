@@ -6,7 +6,6 @@
 
 module JsonInputReader (getJSONPositions , getEstablishments) where
 
-import System.Locale
 import Control.Monad
 import Control.Applicative
 import Data.List

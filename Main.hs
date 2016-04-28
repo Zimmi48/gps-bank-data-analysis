@@ -9,7 +9,6 @@ import System.FilePath
 import System.Console.GetOpt
 import System.Environment
 import System.Exit
-import System.Locale
 import Data.Time
 import Data.Function
 import Data.List

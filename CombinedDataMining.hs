@@ -10,7 +10,6 @@ module CombinedDataMining (
     getSpendingEvents
 ) where
 
-import System.Locale
 import Control.Monad
 import Data.Time
 import Data.Time.Format
